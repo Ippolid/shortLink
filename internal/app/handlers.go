@@ -23,7 +23,7 @@ func (s *Server) PostCreate(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("content-type", "text/plain")
 	// устанавливаем код 200
-	res.WriteHeader(http.StatusOK)
+	res.WriteHeader(http.StatusCreated)
 	// пишем тело ответа
 	_, err = res.Write([]byte(host + id))
 	if err != nil {
@@ -52,7 +52,7 @@ func (s *Server) GetId(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("content-type", "text/plain")
 	// устанавливаем код 200
 
-	http.Redirect(res, req, val, http.StatusMovedPermanently)
+	http.Redirect(res, req, val, http.StatusTemporaryRedirect)
 }
 
 func (s *Server) BadRequest(res http.ResponseWriter, req *http.Request) {
