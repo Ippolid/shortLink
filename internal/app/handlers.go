@@ -38,10 +38,6 @@ func (s *Server) GetId(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//if err := req.URL.Query(); err != nil {
-	//	http.Error(res, "Can`t read id", http.StatusUnprocessableEntity)
-	//	return
-	//}
 	id := strings.TrimPrefix(req.URL.Path, "/")
 	val, err := s.database.Data[id]
 	if err != true {
