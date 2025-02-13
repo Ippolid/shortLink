@@ -51,11 +51,6 @@ func (s *Server) GetId(res http.ResponseWriter, req *http.Request) {
 	http.Redirect(res, req, val, http.StatusTemporaryRedirect)
 }
 
-func (s *Server) BadRequest(res http.ResponseWriter, req *http.Request) {
-	http.Error(res, "BadRequest", http.StatusBadRequest)
-	return
-}
-
 func ValidationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Проверяем метод запроса
