@@ -23,7 +23,7 @@ func (s *Server) PostCreate(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("content-type", "text/plain")
 	// устанавливаем код 200
-	res.WriteHeader(http.StatusOK)
+	res.WriteHeader(http.StatusCreated)
 	// пишем тело ответа
 	_, err = res.Write([]byte(host + id))
 	if err != nil {
@@ -38,10 +38,6 @@ func (s *Server) GetId(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	//if err := req.URL.Query(); err != nil {
-	//	http.Error(res, "Can`t read id", http.StatusUnprocessableEntity)
-	//	return
-	//}
 	id := strings.TrimPrefix(req.URL.Path, "/")
 	val, err := s.database.Data[id]
 	if err != true {
@@ -52,12 +48,7 @@ func (s *Server) GetId(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("content-type", "text/plain")
 	// устанавливаем код 200
 
-	http.Redirect(res, req, val, http.StatusMovedPermanently)
-}
-
-func (s *Server) BadRequest(res http.ResponseWriter, req *http.Request) {
-	http.Error(res, "BadRequest", http.StatusBadRequest)
-	return
+	http.Redirect(res, req, val, http.StatusTemporaryRedirect)
 }
 
 func ValidationMiddleware(next http.Handler) http.Handler {
