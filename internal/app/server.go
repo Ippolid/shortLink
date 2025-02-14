@@ -28,7 +28,7 @@ func (s *Server) newServer() *http.ServeMux {
 	engine := http.NewServeMux()
 
 	engine.Handle("/", ValidationMiddleware(http.HandlerFunc(s.PostCreate)))
-	engine.Handle("/{id}", ValidationMiddleware(http.HandlerFunc(s.GetId)))
+	engine.Handle("/{id}", ValidationMiddleware(http.HandlerFunc(s.GetID)))
 	//engine.HandleFunc("/{id}", s.GetId)
 
 	return engine
