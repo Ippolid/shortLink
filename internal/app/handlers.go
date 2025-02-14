@@ -32,7 +32,7 @@ func (s *Server) PostCreate(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *Server) GetId(res http.ResponseWriter, req *http.Request) {
+func (s *Server) GetID(res http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		http.Error(res, "Not GET method", http.StatusBadRequest)
 		return
@@ -40,7 +40,7 @@ func (s *Server) GetId(res http.ResponseWriter, req *http.Request) {
 
 	id := strings.TrimPrefix(req.URL.Path, "/")
 	val, err := s.database.Data[id]
-	if err != true {
+	if !err {
 		http.Error(res, "Can`t find link", http.StatusBadRequest)
 		return
 	}
