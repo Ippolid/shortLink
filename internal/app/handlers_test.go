@@ -113,6 +113,7 @@ func TestGetLink(t *testing.T) {
 			handler.ServeHTTP(w, request)
 
 			res := w.Result()
+			defer res.Body.Close()
 			// проверяем код ответа
 			assert.Equal(t, res.StatusCode, test.want.code)
 			// проверяем заголовок Location
