@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 type Server struct {
@@ -17,12 +18,19 @@ func New(st *Dbase) *Server {
 
 func (s *Server) newServer() *gin.Engine {
 	engine := gin.New()
+	engine.Use(ValidationMiddleware())
 
 	engine.POST(
 		"/",
-		gin.WrapF(s.PostCreate),
+		s.PostCreate,
 	)
-	engine.GET("/{id}", gin.WrapF(s.GetID))
+	engine.GET("/{id}",
+		s.GetID,
+	)
+
+	engine.NoRoute(func(c *gin.Context) {
+		c.String(http.StatusBadRequest, "Route not found")
+	})
 
 	return engine
 }
