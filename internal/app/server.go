@@ -24,7 +24,7 @@ func (s *Server) newServer() *gin.Engine {
 		"/",
 		s.PostCreate,
 	)
-	engine.GET("/{id}",
+	engine.GET("/:id",
 		s.GetID,
 	)
 
