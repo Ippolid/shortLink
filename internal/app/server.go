@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
@@ -15,29 +16,26 @@ func New(st *Dbase) *Server {
 	return s
 }
 
-type MyHandler struct{}
+func (s *Server) newServer() *gin.Engine {
+	engine := gin.New()
+	engine.Use(ValidationMiddleware())
 
-var h MyHandler
+	engine.POST(
+		"/",
+		s.PostCreate,
+	)
+	engine.GET("/:id",
+		s.GetID,
+	)
 
-func (h MyHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	data := []byte("Привет!")
-	res.Write(data)
-}
-
-func (s *Server) newServer() *http.ServeMux {
-	engine := http.NewServeMux()
-
-	engine.Handle("/", ValidationMiddleware(http.HandlerFunc(s.PostCreate)))
-	engine.Handle("/{id}", ValidationMiddleware(http.HandlerFunc(s.GetID)))
-	//engine.HandleFunc("/{id}", s.GetId)
+	engine.NoRoute(func(c *gin.Context) {
+		c.String(http.StatusBadRequest, "Route not found")
+	})
 
 	return engine
 }
 
 func (s *Server) Start() error {
-	err := http.ListenAndServe(`:8080`, s.newServer())
-	if err != nil {
-		return err
-	}
-	return nil
+	engine := s.newServer()
+	return engine.Run(":8080")
 }
