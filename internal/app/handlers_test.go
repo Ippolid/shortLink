@@ -65,7 +65,9 @@ import (
 //	}
 func TestCreateLink(t *testing.T) {
 	db := NewDbase()
-	server := New(&db)
+	host := "localhost:8080"
+	adr := "http://localhost:8080/"
+	server := New(&db, adr, host)
 	r := server.newServer()
 	ts := httptest.NewServer(r)
 	defer ts.Close()
@@ -176,7 +178,9 @@ func TestCreateLink(t *testing.T) {
 //	}
 func TestGetLink(t *testing.T) {
 	db := NewDbase()
-	server := New(&db)
+	host := "localhost:8080"
+	adr := "http://localhost:8080/"
+	server := New(&db, adr, host)
 	server.database.SaveLink([]byte("https://ru.wikipedia.org/wiki/SHA-1"), "b12a6809")
 	server.database.SaveLink([]byte("https://github.com/Ippolid/shortLink/pulls?q=is%3Apr+is%3Aopen"), "14603b1d")
 
