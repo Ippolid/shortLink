@@ -42,10 +42,9 @@ func (s *Server) PostCreate(c *gin.Context) {
 
 	id := GenerateShortID(val)
 	s.database.SaveLink(val, id)
-	fmt.Println(s.database)
 
 	c.Header("content-type", "text/plain")
-	c.String(http.StatusCreated, host+id)
+	c.String(http.StatusCreated, s.Adr+id)
 }
 
 //	func (s *Server) GetID(res http.ResponseWriter, req *http.Request) {

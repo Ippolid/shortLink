@@ -4,8 +4,6 @@ type Dbase struct {
 	Data map[string]string
 }
 
-var host = "http://localhost:8080/"
-
 func NewDbase() Dbase {
 	s := Dbase{
 		Data: make(map[string]string),
