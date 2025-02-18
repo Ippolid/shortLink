@@ -7,11 +7,15 @@ import (
 
 type Server struct {
 	database *Dbase
+	Host     string
+	Adr      string
 }
 
-func New(st *Dbase) *Server {
+func New(st *Dbase, adr, host string) *Server {
 	s := &Server{
 		database: st,
+		Host:     host,
+		Adr:      adr,
 	}
 	return s
 }
@@ -37,5 +41,5 @@ func (s *Server) newServer() *gin.Engine {
 
 func (s *Server) Start() error {
 	engine := s.newServer()
-	return engine.Run(":8080")
+	return engine.Run(s.Host)
 }
