@@ -18,7 +18,7 @@ func main() {
 	if envRunAdr := os.Getenv("BASE_URL"); envRunAdr != "" {
 		adr = envRunAdr
 	}
-
+	adr += "/"
 	k := app.NewDbase()
 	s := app.New(&k, adr, host)
 	if err := s.Start(); err != nil {
