@@ -6,7 +6,6 @@ import (
 	"os"
 )
 
-// функция main вызывается автоматически при запуске приложения
 func main() {
 	host, adr := config.ParseFlags()
 	//fmt.Println(host, adr)
@@ -25,5 +24,3 @@ func main() {
 		panic(err)
 	}
 }
-
-// функция run будет полезна при инициализации зависимостей сервера перед запуском
