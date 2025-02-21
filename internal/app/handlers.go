@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
 	"net/http"
@@ -67,7 +66,6 @@ func (s *Server) PostCreate(c *gin.Context) {
 //	}
 func (s *Server) GetID(c *gin.Context) {
 	id := c.Param("id")
-	fmt.Println(id)
 	val, exists := s.database.Data[id]
 	if !exists {
 		c.String(http.StatusBadRequest, "Can't find link")
