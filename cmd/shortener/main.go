@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Ippolid/shortLink/config"
 	"github.com/Ippolid/shortLink/internal/app"
+	"github.com/Ippolid/shortLink/internal/logger"
 	"os"
 )
 
@@ -17,6 +18,10 @@ func main() {
 	if envRunAdr := os.Getenv("BASE_URL"); envRunAdr != "" {
 		adr = envRunAdr
 		adr += "/"
+	}
+
+	if err := logger.Initialize("info"); err != nil {
+		panic(err)
 	}
 	k := app.NewDbase()
 	s := app.New(&k, adr, host)

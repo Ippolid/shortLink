@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/Ippolid/shortLink/internal/logger"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
@@ -23,6 +24,7 @@ func New(st *Dbase, adr, host string) *Server {
 func (s *Server) newServer() *gin.Engine {
 	engine := gin.New()
 	engine.Use(ValidationMiddleware())
+	engine.Use(logger.RequestLogger())
 
 	engine.POST(
 		"/",
