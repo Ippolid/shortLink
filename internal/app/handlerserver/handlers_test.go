@@ -1,6 +1,7 @@
-package app
+package handlerserver
 
 import (
+	"github.com/Ippolid/shortLink/internal/app"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/resty.v1"
@@ -64,7 +65,7 @@ import (
 //		}
 //	}
 func TestCreateLink(t *testing.T) {
-	db := NewDbase()
+	db := app.NewDbase()
 	host := "localhost:8080"
 	adr := "http://localhost:8080/"
 	server := New(&db, adr, host)
@@ -177,7 +178,7 @@ func TestCreateLink(t *testing.T) {
 //		}
 //	}
 func TestGetLink(t *testing.T) {
-	db := NewDbase()
+	db := app.NewDbase()
 	host := "localhost:8080"
 	adr := "http://localhost:8080/"
 	server := New(&db, adr, host)
@@ -236,6 +237,62 @@ func TestGetLink(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, test.want.code, resp.StatusCode())
 			assert.Equal(t, test.want.location, resp.Header().Get("Location"))
+		})
+	}
+}
+
+func TestCreateLinkApi(t *testing.T) {
+	db := app.NewDbase()
+	host := "localhost:8080"
+	adr := "http://localhost:8080/"
+	server := New(&db, adr, host)
+	r := server.newServer()
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	type want struct {
+		code        int
+		response    string
+		contentType string
+	}
+	tests := []struct {
+		name    string
+		request string
+		want    want
+	}{
+		{
+			name:    "positive test #1",
+			request: `{"url":"https://ru.wikipedia.org/wiki/SHA-1"}`,
+			want: want{
+				code:        201,
+				response:    `{"result":"http://localhost:8080/b12a6809"}`,
+				contentType: "application/json",
+			},
+		},
+		{
+			name:    "positive test #2",
+			request: `{"url":"https://github.com/Ippolid/shortLink/pulls?q=is%3Apr+is%3Aopen"}`,
+			want: want{
+				code:        201,
+				response:    `{"result":"http://localhost:8080/14603b1d"}`,
+				contentType: "application/json",
+			},
+		},
+	}
+
+	client := resty.New()
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resp, err := client.R().
+				SetHeader("Content-Type", "application/json").
+				SetBody(test.request).
+				Post(ts.URL + "/api/shorten")
+
+			require.NoError(t, err)
+			assert.Equal(t, test.want.code, resp.StatusCode())
+			assert.JSONEq(t, test.want.response, resp.String())
+			assert.Equal(t, test.want.contentType, resp.Header().Get("Content-Type"))
 		})
 	}
 }

@@ -1,18 +1,19 @@
-package app
+package handlerserver
 
 import (
+	"github.com/Ippolid/shortLink/internal/app"
 	"github.com/Ippolid/shortLink/internal/logger"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 type Server struct {
-	database *Dbase
+	database *app.Dbase
 	Host     string
 	Adr      string
 }
 
-func New(st *Dbase, adr, host string) *Server {
+func New(st *app.Dbase, adr, host string) *Server {
 	s := &Server{
 		database: st,
 		Host:     host,
@@ -23,7 +24,7 @@ func New(st *Dbase, adr, host string) *Server {
 
 func (s *Server) newServer() *gin.Engine {
 	engine := gin.New()
-	engine.Use(ValidationMiddleware())
+	//engine.Use(ValidationMiddleware())
 	engine.Use(logger.RequestLogger())
 
 	engine.POST(
@@ -32,6 +33,9 @@ func (s *Server) newServer() *gin.Engine {
 	)
 	engine.GET("/:id",
 		s.GetID,
+	)
+	engine.POST("/api/shorten",
+		s.PostAPI,
 	)
 
 	engine.NoRoute(func(c *gin.Context) {

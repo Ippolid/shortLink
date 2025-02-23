@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Ippolid/shortLink/config"
 	"github.com/Ippolid/shortLink/internal/app"
+	"github.com/Ippolid/shortLink/internal/app/handlerserver"
 	"github.com/Ippolid/shortLink/internal/logger"
 	"os"
 )
@@ -24,7 +25,7 @@ func main() {
 		panic(err)
 	}
 	k := app.NewDbase()
-	s := app.New(&k, adr, host)
+	s := handlerserver.New(&k, adr, host)
 	if err := s.Start(); err != nil {
 		panic(err)
 	}
