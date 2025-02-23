@@ -1,6 +1,7 @@
 package handlerserver
 
 import (
+	"encoding/json"
 	"github.com/Ippolid/shortLink/internal/app"
 	"github.com/Ippolid/shortLink/internal/models"
 	"github.com/gin-gonic/gin"
@@ -127,15 +128,15 @@ func ValidationMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
-func (s *Server) PostApi(c *gin.Context) {
+func (s *Server) PostAPI(c *gin.Context) {
 	var req models.PostRerquest
-	if err := c.BindJSON(&req); err != nil {
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 		c.String(http.StatusBadRequest, "Invalid JSON data")
 		return
 	}
 
-	id := app.GenerateShortID([]byte(req.Url))
-	s.database.SaveLink([]byte(req.Url), id)
+	id := app.GenerateShortID([]byte(req.URL))
+	s.database.SaveLink([]byte(req.URL), id)
 
 	response := models.PostResponse{
 		Result: s.Adr + id,
