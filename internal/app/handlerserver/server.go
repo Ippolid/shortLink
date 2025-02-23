@@ -35,7 +35,7 @@ func (s *Server) newServer() *gin.Engine {
 		s.GetID,
 	)
 	engine.POST("/api/shorten",
-		s.PostApi,
+		s.PostAPI,
 	)
 
 	engine.NoRoute(func(c *gin.Context) {
