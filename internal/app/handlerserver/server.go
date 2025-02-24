@@ -26,6 +26,8 @@ func (s *Server) newServer() *gin.Engine {
 	engine := gin.New()
 	//engine.Use(ValidationMiddleware())
 	engine.Use(logger.RequestLogger())
+	engine.Use(gzipDecompressMiddleware()) // Декомпрессия входящих запросов
+	engine.Use(gzipMiddleware())
 
 	engine.POST(
 		"/",
