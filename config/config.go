@@ -2,6 +2,7 @@ package config
 
 import (
 	"flag"
+	"net/url"
 	"os"
 )
 
@@ -24,11 +25,18 @@ func ParseFlags() (string, string, string) {
 		*host = envHost
 	}
 	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
-		*baseURL = envBaseURL
-		*baseURL += "/"
+		*baseURL = envBaseURL + "/"
 	}
 	if envPath := os.Getenv("FILE_STORAGE_PATH"); envPath != "" {
 		*path = envPath
+	}
+
+	if u, err := url.Parse(*baseURL); err == nil {
+		// Убеждаемся, что URL заканчивается на /
+		if u.Path == "" {
+			u.Path = "/"
+		}
+		return *host, u.String(), *path
 	}
 
 	// Если путь пустой, отключаем запись на диск
