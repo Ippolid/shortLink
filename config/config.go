@@ -18,6 +18,7 @@ package config
 import (
 	"flag"
 	"net/url"
+	"os"
 )
 
 func ParseFlags() (string, string, string) {
@@ -33,6 +34,15 @@ func ParseFlags() (string, string, string) {
 			u.Path = "/"
 		}
 		return *host, u.String(), *path
+	}
+
+	if _, err := os.Stat(*path); os.IsNotExist(err) {
+		// Создаем файл, если он не существует
+		file, err := os.Create(*path)
+		if err != nil {
+			panic(err)
+		}
+		file.Close()
 	}
 
 	return *host, "http://localhost:8080/", *path

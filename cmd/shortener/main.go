@@ -31,6 +31,10 @@ func main() {
 	if err := logger.Initialize("info"); err != nil {
 		panic(err)
 	}
+
+	if err := logger.Initialize("info"); err != nil {
+		panic(err)
+	}
 	k := app.NewDbase()
 
 	err := k.ReadLocal(path)
