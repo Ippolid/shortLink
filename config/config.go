@@ -35,6 +35,9 @@ func ParseFlags() (string, string, string) {
 		}
 		return *host, u.String(), *path
 	}
+	if *path == "" {
+		*path = "./tmp/short-url-db.json"
+	}
 
 	if _, err := os.Stat(*path); os.IsNotExist(err) {
 		// Создаем файл, если он не существует
