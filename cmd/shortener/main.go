@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/Ippolid/shortLink/config"
 	"github.com/Ippolid/shortLink/internal/app"
 	"github.com/Ippolid/shortLink/internal/app/handlerserver"
 	"github.com/Ippolid/shortLink/internal/logger"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -44,10 +47,12 @@ func main() {
 
 	s := handlerserver.New(&k, adr, host)
 
+	_, cancel := context.WithCancel(context.Background())
 	// Запускаем сервер в отдельной горутине
 	go func() {
+		log.Println("Запускаем сервер на", host)
 		if err := s.Start(); err != nil {
-			panic(err)
+			log.Fatalf("Ошибка запуска сервера: %v", err)
 		}
 	}()
 
@@ -58,6 +63,10 @@ func main() {
 	<-sigs
 	fmt.Println("Shutting down server...")
 
+	cancel()
+
+	// Ожидаем завершения активных соединений
+	time.Sleep(2 * time.Second)
 	if err := k.WriteLocal(path); err != nil {
 		fmt.Printf("Error writing local data: %v\n", err)
 	} else {
