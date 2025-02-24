@@ -20,9 +20,10 @@ import (
 	"net/url"
 )
 
-func ParseFlags() (string, string) {
+func ParseFlags() (string, string, string) {
 	host := flag.String("a", "localhost:8080", "host")
 	baseURL := flag.String("b", "http://localhost:8080/", "base URL")
+	path := flag.String("f", "./tmp/short-url-db.json", "base URL")
 	flag.Parse()
 
 	// Проверяем и нормализуем baseURL
@@ -31,8 +32,8 @@ func ParseFlags() (string, string) {
 		if u.Path == "" {
 			u.Path = "/"
 		}
-		return *host, u.String()
+		return *host, u.String(), *path
 	}
 
-	return *host, "http://localhost:8080/"
+	return *host, "http://localhost:8080/", *path
 }
