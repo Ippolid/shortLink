@@ -1,52 +1,39 @@
-// package config
-//
-// import (
-//
-//	"flag"
-//	"net/url"
-//
-// )
-//
-//	func ParseFlags() (string, string) {
-//		host := flag.String("a", "localhost:8080", "host")
-//		adr := flag.String("b", "http://localhost:8080/", "adress")
-//		flag.Parse()
-//		return *host, *adr
-//	}
 package config
 
 import (
 	"flag"
-	"net/url"
 	"os"
 )
 
+// ParseFlags обрабатывает флаги и переменные окружения
 func ParseFlags() (string, string, string) {
-	host := flag.String("a", "localhost:8080", "host")
-	baseURL := flag.String("b", "http://localhost:8080/", "base URL")
-	path := flag.String("f", "./tmp/short-url-db.json", "base URL")
+	// Значения по умолчанию
+	defaultHost := "localhost:8080"
+	defaultBaseURL := "http://localhost:8080/"
+	defaultPath := "/tmp/short-url-db.json"
+
+	// Флаги командной строки
+	host := flag.String("a", defaultHost, "Адрес сервера")
+	baseURL := flag.String("b", defaultBaseURL, "Базовый URL")
+	path := flag.String("f", defaultPath, "Путь к файлу хранения URL")
+
 	flag.Parse()
 
-	// Проверяем и нормализуем baseURL
-	if u, err := url.Parse(*baseURL); err == nil {
-		// Убеждаемся, что URL заканчивается на /
-		if u.Path == "" {
-			u.Path = "/"
-		}
-		return *host, u.String(), *path
+	// Приоритет конфигурации: env -> flag -> default
+	if envHost := os.Getenv("SERVER_ADDRESS"); envHost != "" {
+		*host = envHost
 	}
+	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
+		*baseURL = envBaseURL
+	}
+	if envPath := os.Getenv("FILE_STORAGE_PATH"); envPath != "" {
+		*path = envPath
+	}
+
+	// Если путь пустой, отключаем запись на диск
 	if *path == "" {
-		*path = "./tmp/short-url-db.json"
+		return *host, *baseURL, ""
 	}
 
-	if _, err := os.Stat(*path); os.IsNotExist(err) {
-		// Создаем файл, если он не существует
-		file, err := os.Create(*path)
-		if err != nil {
-			panic(err)
-		}
-		file.Close()
-	}
-
-	return *host, "http://localhost:8080/", *path
+	return *host, *baseURL, *path
 }
