@@ -24,7 +24,8 @@ func ParseFlags() (string, string, string) {
 		*host = envHost
 	}
 	if envBaseURL := os.Getenv("BASE_URL"); envBaseURL != "" {
-		*baseURL = envBaseURL + "/"
+		*baseURL = envBaseURL
+		*baseURL += "/"
 	}
 	if envPath := os.Getenv("FILE_STORAGE_PATH"); envPath != "" {
 		*path = envPath
