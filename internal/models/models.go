@@ -6,3 +6,8 @@ type PostRerquest struct {
 type PostResponse struct {
 	Result string `json:"result"`
 }
+
+type LocalLink struct {
+	ID  string `json:"short_url"`
+	URL string `json:"original_url"`
+}
