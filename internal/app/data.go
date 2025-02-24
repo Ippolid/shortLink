@@ -11,6 +11,6 @@ func NewDbase() Dbase {
 	return s
 }
 
-func (d *Dbase) SaveLink(url []byte, id string) {
-	d.Data[id] = string(url)
+func (s *Dbase) SaveLink(url []byte, id string) {
+	s.Data[id] = string(url)
 }

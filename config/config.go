@@ -23,7 +23,7 @@ import (
 func ParseFlags() (string, string, string) {
 	host := flag.String("a", "localhost:8080", "host")
 	baseURL := flag.String("b", "http://localhost:8080/", "base URL")
-	path := flag.String("f", "./tmp/short-url-db.json", "base URL")
+	path := flag.String("f", "../../tmp/short-url-db.json", "base URL")
 	flag.Parse()
 
 	// Проверяем и нормализуем baseURL
