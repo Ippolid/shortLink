@@ -1,6 +1,7 @@
 package handlerserver
 
 import (
+	"database/sql"
 	"github.com/Ippolid/shortLink/internal/app"
 	"github.com/Ippolid/shortLink/internal/logger"
 	"github.com/gin-gonic/gin"
@@ -11,13 +12,15 @@ type Server struct {
 	database *app.Dbase
 	Host     string
 	Adr      string
+	Db       *sql.DB
 }
 
-func New(st *app.Dbase, adr, host string) *Server {
+func New(st *app.Dbase, adr, host string, db *sql.DB) *Server {
 	s := &Server{
 		database: st,
 		Host:     host,
 		Adr:      adr,
+		Db:       db,
 	}
 	return s
 }
@@ -38,6 +41,10 @@ func (s *Server) newServer() *gin.Engine {
 	)
 	engine.POST("/api/shorten",
 		s.PostAPI,
+	)
+
+	engine.GET("/ping",
+		s.PingDB,
 	)
 
 	engine.NoRoute(func(c *gin.Context) {

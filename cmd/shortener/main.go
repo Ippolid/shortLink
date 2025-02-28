@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/Ippolid/shortLink/internal/app/storage"
 	"log"
 	"os"
 	"os/signal"
@@ -32,8 +33,14 @@ func main() {
 		log.Fatalf("Ошибка загрузки данных: %v", err)
 	}
 
+	// Создаём базу данных postresql
+	db1, err := storage.Connect()
+	if err != nil {
+		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+	}
+	
 	// Запускаем сервер
-	server := handlerserver.New(&db, baseURL, host)
+	server := handlerserver.New(&db, baseURL, host, db1)
 	_, cancel := context.WithCancel(context.Background())
 
 	go func() {
