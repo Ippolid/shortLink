@@ -68,7 +68,7 @@ func TestCreateLink(t *testing.T) {
 	db := app.NewDbase()
 	host := "localhost:8080"
 	adr := "http://localhost:8080/"
-	server := New(&db, adr, host)
+	server := New(&db, adr, host, nil)
 	r := server.newServer()
 	ts := httptest.NewServer(r)
 	defer ts.Close()
@@ -181,7 +181,7 @@ func TestGetLink(t *testing.T) {
 	db := app.NewDbase()
 	host := "localhost:8080"
 	adr := "http://localhost:8080/"
-	server := New(&db, adr, host)
+	server := New(&db, adr, host, nil)
 	server.database.SaveLink([]byte("https://ru.wikipedia.org/wiki/SHA-1"), "b12a6809")
 	server.database.SaveLink([]byte("https://github.com/Ippolid/shortLink/pulls?q=is%3Apr+is%3Aopen"), "14603b1d")
 
@@ -245,7 +245,7 @@ func TestCreateLinkApi(t *testing.T) {
 	db := app.NewDbase()
 	host := "localhost:8080"
 	adr := "http://localhost:8080/"
-	server := New(&db, adr, host)
+	server := New(&db, adr, host, nil)
 	r := server.newServer()
 	ts := httptest.NewServer(r)
 	defer ts.Close()
