@@ -3,6 +3,7 @@ package handlerserver
 import (
 	"encoding/json"
 	"github.com/Ippolid/shortLink/internal/app"
+	"github.com/Ippolid/shortLink/internal/app/storage"
 	"github.com/Ippolid/shortLink/internal/models"
 	"github.com/gin-gonic/gin"
 	"io"
@@ -77,6 +78,19 @@ func (s *Server) GetID(c *gin.Context) {
 
 	c.Header("content-type", "text/plain")
 	c.Redirect(http.StatusTemporaryRedirect, val)
+}
+
+func (s *Server) PingDB(c *gin.Context) {
+	b, err := storage.Ping(s.Db)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "DB is not available")
+		return
+	}
+	if b {
+		c.Status(http.StatusOK)
+		return
+	}
+	c.Status(http.StatusInternalServerError)
 }
 
 //	func ValidationMiddleware(next http.Handler) http.Handler {
