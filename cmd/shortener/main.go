@@ -18,7 +18,7 @@ import (
 
 func main() {
 	// Получаем параметры конфигурации
-	host, baseURL, storagePath := config.ParseFlags()
+	host, baseURL, storagePath, dboopen := config.ParseFlags()
 
 	// Инициализация логгера
 	if err := logger.Initialize("info"); err != nil {
@@ -34,11 +34,11 @@ func main() {
 	}
 
 	// Создаём базу данных postresql
-	db1, err := storage.Connect()
+	db1, err := storage.Connect(dboopen)
 	if err != nil {
 		log.Fatalf("Ошибка подключения к базе данных: %v", err)
 	}
-	
+
 	// Запускаем сервер
 	server := handlerserver.New(&db, baseURL, host, db1)
 	_, cancel := context.WithCancel(context.Background())

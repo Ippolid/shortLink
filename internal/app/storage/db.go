@@ -7,9 +7,8 @@ import (
 	"log"
 )
 
-func Connect() (*sql.DB, error) {
-	ps := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable",
-		`localhost`, `postgres`, `1234`, `videos`)
+func Connect(op string) (*sql.DB, error) {
+	ps := op
 
 	db, err := sql.Open("pgx", ps)
 	fmt.Println(db, err)
