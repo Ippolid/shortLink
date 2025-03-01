@@ -12,7 +12,7 @@ func ParseFlags() (string, string, string, string) {
 	// Значения по умолчанию
 	defaultHost := "localhost:8080"
 	defaultBaseURL := "http://localhost:8080/"
-	defaultPath := "./tmp/short-url-db.json"
+	defaultPath := "/tmp/short-url-db.json"
 	defaultDb := ""
 
 	// Флаги командной строки

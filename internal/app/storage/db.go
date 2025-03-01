@@ -11,14 +11,31 @@ type DataBase struct {
 	db *sql.DB
 }
 
-const (
-	CrearTable = `CREATE TABLE  IF NOT EXISTS shorty (
-  id TEXT ,
-  link TEXT
- );`
-	Insert = `INSERT INTO shorty (id, link) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`
-	Get    = `SELECT link FROM shorty WHERE id=$1`
-)
+const CrearTable = `
+CREATE TABLE IF NOT EXISTS public.shorty (
+    id   TEXT PRIMARY KEY,
+    link TEXT NOT NULL
+);
+`
+
+const Insert = `
+INSERT INTO public.shorty (id, link)
+VALUES ($1, $2)
+ON CONFLICT (id)
+DO UPDATE SET link = EXCLUDED.link
+`
+const Get = `SELECT link FROM shorty WHERE id=$1`
+
+//const (
+//	CrearTable = `CREATE TABLE  IF NOT EXISTS shorty (
+//  id TEXT ,
+//  link TEXT
+// );`
+//	Insert = `INSERT INTO shorty (id, link) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`
+//	Get    = `SELECT link FROM shorty WHERE id=$1`
+//
+//
+//)
 
 // NewDBWrapper — конструктор для обёртки
 func NewDataBase(db *sql.DB) (*DataBase, error) {
