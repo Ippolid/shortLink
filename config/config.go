@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// postgres://postgres:1234@localhost:5432/shorty
 // ParseFlags обрабатывает флаги и переменные окружения
 func ParseFlags() (string, string, string, string) {
 	// Значения по умолчанию
