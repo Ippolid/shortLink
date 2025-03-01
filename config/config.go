@@ -6,13 +6,14 @@ import (
 	"os"
 )
 
+// postgres://postgres:1234@localhost:5432/shorty
 // ParseFlags обрабатывает флаги и переменные окружения
 func ParseFlags() (string, string, string, string) {
 	// Значения по умолчанию
 	defaultHost := "localhost:8080"
 	defaultBaseURL := "http://localhost:8080/"
 	defaultPath := "/tmp/short-url-db.json"
-	defaultDb := "postgres://postgres:1234@localhost:5432/videos"
+	defaultDb := ""
 
 	// Флаги командной строки
 	host := flag.String("a", defaultHost, "Адрес сервера")

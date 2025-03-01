@@ -2,8 +2,8 @@ package handlerserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/Ippolid/shortLink/internal/app"
-	"github.com/Ippolid/shortLink/internal/app/storage"
 	"github.com/Ippolid/shortLink/internal/models"
 	"github.com/gin-gonic/gin"
 	"io"
@@ -42,9 +42,18 @@ func (s *Server) PostCreate(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Can't read body")
 		return
 	}
-
 	id := app.GenerateShortID(val)
-	s.database.SaveLink(val, id)
+	if s.Db == nil {
+		s.database.SaveLink(val, id)
+	} else {
+		err = s.Db.InsertLink(id, string(val))
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("Can't save link: %v", err))
+			return
+		}
+	}
+
+	//fmt.Println(s.database)
 
 	c.Header("content-type", "text/plain")
 	c.String(http.StatusCreated, s.Adr+id)
@@ -69,9 +78,26 @@ func (s *Server) PostCreate(c *gin.Context) {
 //		http.Redirect(res, req, val, http.StatusTemporaryRedirect)
 //	}
 func (s *Server) GetID(c *gin.Context) {
+	var val string
+	var err error
+	var exist bool
 	id := c.Param("id")
-	val, exists := s.database.Data[id]
-	if !exists {
+	if s.Db == nil {
+		val, exist = s.database.Data[id]
+		if !exist {
+			c.String(http.StatusBadRequest, "Can't find link")
+			return
+		}
+	} else {
+		val, err = s.Db.GetLink(id)
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
+			return
+		}
+	}
+
+	fmt.Println(val)
+	if err != nil {
 		c.String(http.StatusBadRequest, "Can't find link")
 		return
 	}
@@ -81,7 +107,7 @@ func (s *Server) GetID(c *gin.Context) {
 }
 
 func (s *Server) PingDB(c *gin.Context) {
-	b, err := storage.Ping(s.Db)
+	b, err := s.Db.Ping()
 	if err != nil {
 		c.String(http.StatusInternalServerError, "DB is not available")
 		return
@@ -150,8 +176,15 @@ func (s *Server) PostAPI(c *gin.Context) {
 	}
 
 	id := app.GenerateShortID([]byte(req.URL))
-	s.database.SaveLink([]byte(req.URL), id)
-
+	if s.Db == nil {
+		s.database.SaveLink([]byte(req.URL), id)
+	} else {
+		err := s.Db.InsertLink(id, req.URL)
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
+			return
+		}
+	}
 	response := models.PostResponse{
 		Result: s.Adr + id,
 	}

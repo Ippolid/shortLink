@@ -11,12 +11,13 @@ import (
 	"time"
 
 	"github.com/Ippolid/shortLink/config"
-	"github.com/Ippolid/shortLink/internal/app"
 	"github.com/Ippolid/shortLink/internal/app/handlerserver"
 	"github.com/Ippolid/shortLink/internal/logger"
 )
 
 func main() {
+	var server *handlerserver.Server
+	var db = storage.NewDbase()
 	// Получаем параметры конфигурации
 	host, baseURL, storagePath, dboopen := config.ParseFlags()
 
@@ -24,23 +25,36 @@ func main() {
 	if err := logger.Initialize("info"); err != nil {
 		panic(err)
 	}
+	if dboopen == "" {
+		// Создаём базу данных
 
-	// Создаём базу данных
-	db := app.NewDbase()
+		// Загружаем данные из файла, если файл указан
+		if err := db.ReadLocal(storagePath); err != nil {
+			log.Fatalf("Ошибка загрузки данных: %v", err)
+		}
+		server = handlerserver.New(&db, baseURL, host, nil)
+	} else {
 
-	// Загружаем данные из файла, если файл указан
-	if err := db.ReadLocal(storagePath); err != nil {
-		log.Fatalf("Ошибка загрузки данных: %v", err)
-	}
+		// Создаём базу данных postresql
+		db1, err := storage.Connect(dboopen)
+		if err != nil {
+			log.Fatal("open", err)
+		}
 
-	// Создаём базу данных postresql
-	db1, err := storage.Connect(dboopen)
-	if err != nil {
-		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+		datab, err := storage.NewDataBase(db1)
+		if err != nil {
+			log.Fatal("open", err)
+		}
+		defer db1.Close()
+
+		if err := db1.Ping(); err != nil {
+			log.Fatal("ping", err)
+		}
+		server = handlerserver.New(&db, baseURL, host, datab)
 	}
 
 	// Запускаем сервер
-	server := handlerserver.New(&db, baseURL, host, db1)
+
 	_, cancel := context.WithCancel(context.Background())
 
 	go func() {
