@@ -1,7 +1,7 @@
 package handlerserver
 
 import (
-	"github.com/Ippolid/shortLink/internal/app"
+	"github.com/Ippolid/shortLink/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/resty.v1"
@@ -65,7 +65,7 @@ import (
 //		}
 //	}
 func TestCreateLink(t *testing.T) {
-	db := app.NewDbase()
+	db := storage.NewDbase()
 	host := "localhost:8080"
 	adr := "http://localhost:8080/"
 	server := New(&db, adr, host, nil)
@@ -178,7 +178,7 @@ func TestCreateLink(t *testing.T) {
 //		}
 //	}
 func TestGetLink(t *testing.T) {
-	db := app.NewDbase()
+	db := storage.NewDbase()
 	host := "localhost:8080"
 	adr := "http://localhost:8080/"
 	server := New(&db, adr, host, nil)
@@ -242,7 +242,7 @@ func TestGetLink(t *testing.T) {
 }
 
 func TestCreateLinkApi(t *testing.T) {
-	db := app.NewDbase()
+	db := storage.NewDbase()
 	host := "localhost:8080"
 	adr := "http://localhost:8080/"
 	server := New(&db, adr, host, nil)

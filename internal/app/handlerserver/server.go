@@ -1,21 +1,20 @@
 package handlerserver
 
 import (
-	"database/sql"
-	"github.com/Ippolid/shortLink/internal/app"
+	"github.com/Ippolid/shortLink/internal/app/storage"
 	"github.com/Ippolid/shortLink/internal/logger"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
 type Server struct {
-	database *app.Dbase
+	database *storage.Dbase
 	Host     string
 	Adr      string
-	Db       *sql.DB
+	Db       *storage.DataBase
 }
 
-func New(st *app.Dbase, adr, host string, db *sql.DB) *Server {
+func New(st *storage.Dbase, adr, host string, db *storage.DataBase) *Server {
 	s := &Server{
 		database: st,
 		Host:     host,

@@ -1,4 +1,4 @@
-package app
+package storage
 
 type Dbase struct {
 	Data map[string]string

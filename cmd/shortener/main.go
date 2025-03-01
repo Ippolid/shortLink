@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/Ippolid/shortLink/config"
-	"github.com/Ippolid/shortLink/internal/app"
 	"github.com/Ippolid/shortLink/internal/app/handlerserver"
 	"github.com/Ippolid/shortLink/internal/logger"
 )
@@ -26,7 +25,7 @@ func main() {
 	}
 
 	// Создаём базу данных
-	db := app.NewDbase()
+	db := storage.NewDbase()
 
 	// Загружаем данные из файла, если файл указан
 	if err := db.ReadLocal(storagePath); err != nil {
@@ -36,11 +35,21 @@ func main() {
 	// Создаём базу данных postresql
 	db1, err := storage.Connect(dboopen)
 	if err != nil {
-		log.Fatalf("Ошибка подключения к базе данных: %v", err)
+		log.Fatal("open", err)
+	}
+
+	datab, err := storage.NewDataBase(db1)
+	if err != nil {
+		log.Fatal("open", err)
+	}
+	defer db1.Close()
+
+	if err := db1.Ping(); err != nil {
+		log.Fatal("ping", err)
 	}
 
 	// Запускаем сервер
-	server := handlerserver.New(&db, baseURL, host, db1)
+	server := handlerserver.New(&db, baseURL, host, datab)
 	_, cancel := context.WithCancel(context.Background())
 
 	go func() {
