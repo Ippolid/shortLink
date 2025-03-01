@@ -27,7 +27,6 @@ func main() {
 	}
 	if dboopen == "" {
 		// Создаём базу данных
-		db := storage.NewDbase()
 
 		// Загружаем данные из файла, если файл указан
 		if err := db.ReadLocal(storagePath); err != nil {
@@ -51,7 +50,7 @@ func main() {
 		if err := db1.Ping(); err != nil {
 			log.Fatal("ping", err)
 		}
-		server = handlerserver.New(nil, baseURL, host, datab)
+		server = handlerserver.New(&db, baseURL, host, datab)
 	}
 
 	// Запускаем сервер
@@ -77,11 +76,9 @@ func main() {
 	time.Sleep(2 * time.Second)
 
 	// Сохранение данных перед выходом
-	if dboopen == "" {
-		if err := db.WriteLocal(storagePath); err != nil {
-			fmt.Printf("Ошибка сохранения данных: %v\n", err)
-		} else {
-			fmt.Println("Данные успешно сохранены")
-		}
+	if err := db.WriteLocal(storagePath); err != nil {
+		fmt.Printf("Ошибка сохранения данных: %v\n", err)
+	} else {
+		fmt.Println("Данные успешно сохранены")
 	}
 }

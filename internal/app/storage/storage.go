@@ -39,6 +39,7 @@ func (s *Dbase) ReadLocal(path string) error {
 	}
 
 	fmt.Println("Данные успешно загружены из файла")
+	fmt.Println(s.Data)
 	return nil
 }
 
