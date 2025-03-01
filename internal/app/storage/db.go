@@ -84,8 +84,10 @@ func (data *DataBase) GetLink(id string) (string, error) {
 	var link string
 	err := data.db.QueryRow(Get, id).Scan(&link)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", fmt.Errorf("запись не найдена")
+		}
 		return "", fmt.Errorf("ошибка получения данных: %v", err)
 	}
-	log.Println("Данные успешно получены")
 	return link, nil
 }
