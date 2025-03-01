@@ -16,6 +16,8 @@ import (
 )
 
 func main() {
+	var server *handlerserver.Server
+	var db = storage.NewDbase()
 	// Получаем параметры конфигурации
 	host, baseURL, storagePath, dboopen := config.ParseFlags()
 
@@ -23,33 +25,37 @@ func main() {
 	if err := logger.Initialize("info"); err != nil {
 		panic(err)
 	}
+	if dboopen == "" {
+		// Создаём базу данных
+		db := storage.NewDbase()
 
-	// Создаём базу данных
-	db := storage.NewDbase()
+		// Загружаем данные из файла, если файл указан
+		if err := db.ReadLocal(storagePath); err != nil {
+			log.Fatalf("Ошибка загрузки данных: %v", err)
+		}
+		server = handlerserver.New(&db, baseURL, host, nil)
+	} else {
 
-	// Загружаем данные из файла, если файл указан
-	if err := db.ReadLocal(storagePath); err != nil {
-		log.Fatalf("Ошибка загрузки данных: %v", err)
-	}
+		// Создаём базу данных postresql
+		db1, err := storage.Connect(dboopen)
+		if err != nil {
+			log.Fatal("open", err)
+		}
 
-	// Создаём базу данных postresql
-	db1, err := storage.Connect(dboopen)
-	if err != nil {
-		log.Fatal("open", err)
-	}
+		datab, err := storage.NewDataBase(db1)
+		if err != nil {
+			log.Fatal("open", err)
+		}
+		defer db1.Close()
 
-	datab, err := storage.NewDataBase(db1)
-	if err != nil {
-		log.Fatal("open", err)
-	}
-	defer db1.Close()
-
-	if err := db1.Ping(); err != nil {
-		log.Fatal("ping", err)
+		if err := db1.Ping(); err != nil {
+			log.Fatal("ping", err)
+		}
+		server = handlerserver.New(nil, baseURL, host, datab)
 	}
 
 	// Запускаем сервер
-	server := handlerserver.New(&db, baseURL, host, datab)
+
 	_, cancel := context.WithCancel(context.Background())
 
 	go func() {
@@ -71,9 +77,11 @@ func main() {
 	time.Sleep(2 * time.Second)
 
 	// Сохранение данных перед выходом
-	if err := db.WriteLocal(storagePath); err != nil {
-		fmt.Printf("Ошибка сохранения данных: %v\n", err)
-	} else {
-		fmt.Println("Данные успешно сохранены")
+	if dboopen == "" {
+		if err := db.WriteLocal(storagePath); err != nil {
+			fmt.Printf("Ошибка сохранения данных: %v\n", err)
+		} else {
+			fmt.Println("Данные успешно сохранены")
+		}
 	}
 }
