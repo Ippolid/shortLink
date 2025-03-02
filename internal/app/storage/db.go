@@ -11,31 +11,21 @@ type DataBase struct {
 	db *sql.DB
 }
 
-const CrearTable = `
+const (
+	CrearTable = `
 CREATE TABLE IF NOT EXISTS public.shorty (
     id   TEXT PRIMARY KEY,
     link TEXT NOT NULL
 );
 `
-
-const Insert = `
+	Insert = `
 INSERT INTO public.shorty (id, link)
 VALUES ($1, $2)
 ON CONFLICT (id)
 DO UPDATE SET link = EXCLUDED.link
 `
-const Get = `SELECT link FROM shorty WHERE id=$1`
-
-//const (
-//	CrearTable = `CREATE TABLE  IF NOT EXISTS shorty (
-//  id TEXT ,
-//  link TEXT
-// );`
-//	Insert = `INSERT INTO shorty (id, link) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`
-//	Get    = `SELECT link FROM shorty WHERE id=$1`
-//
-//
-//)
+	Get = `SELECT link FROM shorty WHERE id=$1`
+)
 
 // NewDBWrapper — конструктор для обёртки
 func NewDataBase(db *sql.DB) (*DataBase, error) {
@@ -45,25 +35,6 @@ func NewDataBase(db *sql.DB) (*DataBase, error) {
 	}
 	return &DataBase{db: db}, nil
 }
-
-//func CreateDB(connStr string) (*sql.DB, error) {
-//	// Подключаемся к базе данных
-//	db, err := Connect(connStr)
-//	if err != nil {
-//		return nil, fmt.Errorf("ошибка подключения к базе данных: %v", err)
-//	}
-//
-//	// SQL-запрос для создания таблицы
-//
-//	// Выполняем запрос
-//	_, err = db.Exec(CrearTable)
-//	if err != nil {
-//		return nil, fmt.Errorf("ошибка выполнения запроса: %v", err)
-//	}
-//
-//	log.Println("Таблица успешно создана или уже существует")
-//	return db, nil
-//}
 
 func Connect(op string) (*sql.DB, error) {
 	ps := op
@@ -89,10 +60,27 @@ func (data *DataBase) Ping() (bool, error) {
 }
 
 func (data *DataBase) InsertLink(id, link string) error {
-	_, err := data.db.Exec(Insert, id, link)
+	tx, err := data.db.Begin()
+	if err != nil {
+		return fmt.Errorf("ошибка начала транзакции: %v", err)
+	}
+	defer func() {
+		if err != nil {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Printf("Ошибка отката транзакции: %v", rollbackErr)
+			}
+		}
+	}()
+	_, err = tx.Exec(Insert, id, link)
 	if err != nil {
 		return fmt.Errorf("ошибка вставки данных: %v", err)
 	}
+
+	// Фиксируем транзакцию
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("ошибка подтверждения транзакции: %v", err)
+	}
+
 	log.Println("Данные успешно вставлены")
 	return nil
 }

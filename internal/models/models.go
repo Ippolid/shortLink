@@ -11,3 +11,13 @@ type LocalLink struct {
 	ID  string `json:"short_url"`
 	URL string `json:"original_url"`
 }
+
+type PostBatchReq struct {
+	ID  string `json:"correlation_id" binding:"required"`
+	URL string `json:"original_url" binding:"required"`
+}
+
+type PostBatchResp struct {
+	ID  string `json:"correlation_id"`
+	URL string `json:"short_url"`
+}
