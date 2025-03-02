@@ -191,3 +191,35 @@ func (s *Server) PostAPI(c *gin.Context) {
 	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusCreated, response)
 }
+
+func (s *Server) PostBatch(c *gin.Context) {
+	var req []models.PostBatchReq
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		c.String(http.StatusBadRequest, "Invalid JSON data")
+		return
+	}
+	var otv models.PostBatchResp
+	var resp []models.PostBatchResp
+	for _, r := range req {
+		if r.ID != "" && r.URL != "" {
+			otv.ID = r.ID
+			k := app.GenerateShortID([]byte(r.URL))
+			otv.URL = s.Adr + k
+
+			if s.Db == nil {
+				s.database.SaveLink([]byte(r.URL), k)
+			} else {
+				err := s.Db.InsertLink(k, r.URL)
+				if err != nil {
+					c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
+				}
+
+			}
+			resp = append(resp, otv)
+		}
+	}
+	fmt.Println(resp)
+	c.Header("Content-Type", "application/json")
+	c.JSON(http.StatusCreated, resp)
+
+}

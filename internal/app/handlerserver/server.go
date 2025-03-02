@@ -46,6 +46,10 @@ func (s *Server) newServer() *gin.Engine {
 		s.PingDB,
 	)
 
+	engine.POST("/api/shorten/batch",
+		s.PostBatch,
+	)
+
 	engine.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Route not found")
 	})
