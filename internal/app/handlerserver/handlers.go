@@ -218,7 +218,7 @@ func (s *Server) PostBatch(c *gin.Context) {
 			resp = append(resp, otv)
 		}
 	}
-	fmt.Println(resp)
+
 	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusCreated, resp)
 
