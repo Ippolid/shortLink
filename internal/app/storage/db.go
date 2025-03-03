@@ -13,16 +13,15 @@ type DataBase struct {
 
 const (
 	CrearTable = `
-CREATE TABLE IF NOT EXISTS public.shorty (
+CREATE TABLE IF NOT EXISTS shorty (
     id   TEXT PRIMARY KEY,
-    link TEXT NOT NULL
+    link TEXT NOT NULL UNIQUE
 );
 `
 	Insert = `
-INSERT INTO public.shorty (id, link)
+INSERT INTO shorty (id, link)
 VALUES ($1, $2)
-ON CONFLICT (id)
-DO UPDATE SET link = EXCLUDED.link
+ON CONFLICT DO NOTHING;
 `
 	Get = `SELECT link FROM shorty WHERE id=$1`
 )
@@ -60,6 +59,32 @@ func (data *DataBase) Ping() (bool, error) {
 }
 
 func (data *DataBase) InsertLink(id, link string) error {
+	//tx, err := data.db.Begin()
+	//if err != nil {
+	//	return fmt.Errorf("ошибка начала транзакции: %v", err)
+	//}
+	//defer func() {
+	//	if err != nil {
+	//		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+	//			log.Printf("Ошибка отката транзакции: %v", rollbackErr)
+	//		}
+	//	}
+	//}()
+	//res, err1 := tx.Exec(Insert, id, link)
+	//
+	//fmt.Println(res, err1)
+	//
+	//if err != nil {
+	//	return fmt.Errorf("ошибка вставки данных: %v", err)
+	//}
+	//
+	//// Фиксируем транзакцию
+	//if err = tx.Commit(); err != nil {
+	//	return fmt.Errorf("ошибка подтверждения транзакции: %v", err)
+	//}
+	//
+	//log.Println("Данные успешно вставлены")
+	//return nil
 	tx, err := data.db.Begin()
 	if err != nil {
 		return fmt.Errorf("ошибка начала транзакции: %v", err)
@@ -71,9 +96,22 @@ func (data *DataBase) InsertLink(id, link string) error {
 			}
 		}
 	}()
-	_, err = tx.Exec(Insert, id, link)
+
+	result, err := tx.Exec(Insert, id, link)
 	if err != nil {
-		return fmt.Errorf("ошибка вставки данных: %v", err)
+		return fmt.Errorf("link exists %v", err)
+	}
+
+	// Проверяем, была ли выполнена вставка
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("ошибка получения количества затронутых строк: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		// Если вставка не произошла из-за ON CONFLICT DO NOTHING,
+		// возвращаем специальную ошибку, которую потом можно обработать
+		return fmt.Errorf("link exists %v", err)
 	}
 
 	// Фиксируем транзакцию

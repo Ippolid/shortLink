@@ -42,18 +42,27 @@ func (s *Server) PostCreate(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Can't read body")
 		return
 	}
+
 	id := app.GenerateShortID(val)
 	if s.Db == nil {
+		_, exist := s.database.Data[id]
+		if exist {
+			c.String(http.StatusConflict, s.Adr+id)
+			return
+		}
 		s.database.SaveLink(val, id)
 	} else {
 		err = s.Db.InsertLink(id, string(val))
 		if err != nil {
+			fmt.Println(err)
+			if strings.Contains(err.Error(), "link exists") {
+				c.String(http.StatusConflict, s.Adr+id)
+				return
+			}
 			c.String(http.StatusBadRequest, fmt.Sprintf("Can't save link: %v", err))
 			return
 		}
 	}
-
-	//fmt.Println(s.database)
 
 	c.Header("content-type", "text/plain")
 	c.String(http.StatusCreated, s.Adr+id)
@@ -177,11 +186,27 @@ func (s *Server) PostAPI(c *gin.Context) {
 
 	id := app.GenerateShortID([]byte(req.URL))
 	if s.Db == nil {
+		_, exist := s.database.Data[id]
+		if exist {
+			response := models.PostResponse{
+				Result: s.Adr + id,
+			}
+			c.JSON(http.StatusConflict, response)
+			return
+		}
 		s.database.SaveLink([]byte(req.URL), id)
 	} else {
 		err := s.Db.InsertLink(id, req.URL)
 		if err != nil {
-			c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
+			fmt.Println(err)
+			if strings.Contains(err.Error(), "link exists") {
+				response := models.PostResponse{
+					Result: s.Adr + id,
+				}
+				c.JSON(http.StatusConflict, response)
+				return
+			}
+			c.String(http.StatusBadRequest, fmt.Sprintf("Can't save link: %v", err))
 			return
 		}
 	}
