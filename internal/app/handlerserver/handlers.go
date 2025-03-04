@@ -11,31 +11,6 @@ import (
 	"strings"
 )
 
-//	func (s *Server) PostCreate(res http.ResponseWriter, req *http.Request) {
-//		if req.Method != http.MethodPost {
-//			http.Error(res, "Not POST method", http.StatusMethodNotAllowed)
-//			return
-//		}
-//
-//		val, err := io.ReadAll(req.Body)
-//		if err != nil {
-//			http.Error(res, "Can`t read body", http.StatusUnprocessableEntity)
-//			return
-//		}
-//
-//		id := GenerateShortID(val)
-//		s.database.SaveLink(val, id)
-//
-//		res.Header().Set("content-type", "text/plain")
-//		// устанавливаем код 200
-//		res.WriteHeader(http.StatusCreated)
-//		// пишем тело ответа
-//		_, err = res.Write([]byte(host + id))
-//		if err != nil {
-//			http.Error(res, "Can`t write body", http.StatusUnprocessableEntity)
-//			return
-//		}
-//	}
 func (s *Server) PostCreate(c *gin.Context) {
 	val, err := io.ReadAll(c.Request.Body)
 	if err != nil {
@@ -68,24 +43,6 @@ func (s *Server) PostCreate(c *gin.Context) {
 	c.String(http.StatusCreated, s.Adr+id)
 }
 
-//	func (s *Server) GetID(res http.ResponseWriter, req *http.Request) {
-//		if req.Method != http.MethodGet {
-//			http.Error(res, "Not GET method", http.StatusBadRequest)
-//			return
-//		}
-//
-//		id := strings.TrimPrefix(req.URL.Path, "/")
-//		val, err := s.database.Data[id]
-//		if !err {
-//			http.Error(res, "Can`t find link", http.StatusBadRequest)
-//			return
-//		}
-//
-//		res.Header().Set("content-type", "text/plain")
-//		// устанавливаем код 200
-//
-//		http.Redirect(res, req, val, http.StatusTemporaryRedirect)
-//	}
 func (s *Server) GetID(c *gin.Context) {
 	var val string
 	var err error
@@ -128,55 +85,30 @@ func (s *Server) PingDB(c *gin.Context) {
 	c.Status(http.StatusInternalServerError)
 }
 
-//	func ValidationMiddleware(next http.Handler) http.Handler {
-//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//			// Проверяем метод запроса
-//			if r.Method != http.MethodPost && r.Method != http.MethodGet {
-//				http.Error(w, "Method Not Allowed", http.StatusBadRequest)
-//				return
-//			}
-//
-//			// Если метод POST, проверяем, что путь "/"
-//			if r.Method == http.MethodPost && r.URL.Path != "/" {
-//				http.Error(w, "Invalid POST path", http.StatusBadRequest)
-//				return
-//			}
-//
-//			// Если метод GET, проверяем, что путь содержит ID
-//			if r.Method == http.MethodGet && (r.URL.Path == "/" || strings.Contains(r.URL.Path, "/ ")) {
-//				http.Error(w, "Invalid GET path", http.StatusBadRequest)
-//				return
-//			}
-//
-//			next.ServeHTTP(w, r)
-//		})
-//	}
-func ValidationMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Проверяем метод запроса
-		if c.Request.Method != http.MethodPost && c.Request.Method != http.MethodGet {
-			c.String(http.StatusBadRequest, "Method Not Allowed")
-			c.Abort()
-			return
-		}
+func (s *Server) TestCookie(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
 
-		// Если метод POST, проверяем, что путь "/"
-		if c.Request.Method == http.MethodPost && c.Request.URL.Path != "/" {
-			c.String(http.StatusBadRequest, "Invalid POST path")
-			c.Abort()
-			return
-		}
-
-		// Если метод GET, проверяем, что путь содержит ID
-		if c.Request.Method == http.MethodGet && (c.Request.URL.Path == "/" || strings.Contains(c.Request.URL.Path, "/ ")) {
-			c.String(http.StatusBadRequest, "Invalid GET path")
-			c.Abort()
-			return
-		}
-
-		c.Next()
+	// Будем искать префикс "Bearer "
+	var bearerToken string
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		// Убираем префикс "Bearer "
+		bearerToken = strings.TrimPrefix(authHeader, "Bearer ")
 	}
+
+	// Если токен пустой - возвращаем 401
+	if bearerToken == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "no valid bearer token found",
+		})
+		return
+	}
+
+	// Иначе продолжаем - для примера просто вернем полученный токен в ответе
+	c.JSON(http.StatusOK, gin.H{
+		"bearer_token": bearerToken,
+	})
 }
+
 func (s *Server) PostAPI(c *gin.Context) {
 	var req models.PostRerquest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
@@ -246,5 +178,54 @@ func (s *Server) PostBatch(c *gin.Context) {
 
 	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusCreated, resp)
-
 }
+
+//	func AuthMiddleware() gin.HandlerFunc {
+//		//return func(c *gin.Context) {
+//		//	cookie, err := c.Cookie(config.CookieName)
+//		//	var userID string
+//		//
+//		//	if err != nil || userID, _ = app.ValidateCookie(cookie); err != nil {
+//		//		// Генерация нового user_id
+//		//		userID = uuid.NewString()
+//		//		db.Create(&User{ID: userID})
+//		//
+//		//		// Создание подписанной куки
+//		//		data, _ := json.Marshal(map[string]string{
+//		//			"user_id": userID,
+//		//			"sign":    signUserID(userID),
+//		//		})
+//		//
+//		//		c.SetCookie(cookieName, string(data), 3600*24, "/", "", false, true)
+//		//	}
+//		//
+//		//	// Сохранение user_id в контексте
+//		//	c.Set("user_id", userID)
+//		//	c.Next()
+//		return func(c *gin.Context) {
+//			cookie, err := c.Cookie(config.CookieName)
+//			var userID string
+//
+//			// Если кука существует, проверяем её
+//			if err == nil {
+//				userID, _ = app.ValidateCookie(cookie)
+//			}
+//
+//			// Если куки нет или она невалидна, создаем новую
+//			if err != nil || userID == "" {
+//				userID = uuid.NewString()
+//
+//				// Создание подписанной куки
+//				data, _ := json.Marshal(models.UserCookie{
+//					UserID: userID,
+//					Sign:   app.SignUserID(userID),
+//				})
+//
+//				c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+//			}
+//
+//			// Сохранение user_id в контексте
+//			c.Set("user_id", userID)
+//			c.Next()
+//		}
+//	}

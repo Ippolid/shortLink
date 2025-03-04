@@ -21,3 +21,13 @@ type PostBatchResp struct {
 	ID  string `json:"correlation_id"`
 	URL string `json:"short_url"`
 }
+
+type GETUserLinks struct {
+	ShortUrl    string `json:"short_url"`
+	OriginalUrl string `json:"original_url"`
+}
+
+type UserCookie struct {
+	UserID string `json:"user_id"`
+	Sign   string `json:"sign"`
+}
