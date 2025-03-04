@@ -7,6 +7,7 @@ import (
 	"github.com/Ippolid/shortLink/internal/app"
 	"github.com/Ippolid/shortLink/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"strings"
@@ -186,62 +187,138 @@ func (s *Server) PostBatch(c *gin.Context) {
 	c.JSON(http.StatusCreated, resp)
 }
 
+//	func (s *Server) UserUrls(c *gin.Context) {
+//		var otv models.GETUserLinks
+//		var resp []models.GETUserLinks
+//		userId, _ := app.GetUserId(c)
+//		//if err != nil {
+//		//	c.String(http.StatusUnauthorized, "Can't get user id")
+//		//	return
+//		//}
+//		for key, value := range s.database.DataUsers {
+//			if value == userId {
+//				otv.OriginalUrl = s.database.Data[key]
+//				otv.ShortUrl = s.Adr + key
+//				resp = append(resp, otv)
+//			}
+//		}
+//		if len(resp) == 0 {
+//			c.Header("Content-Type", "application/json")
+//			c.JSON(http.StatusNoContent, gin.H{"message": "No links"})
+//			return
+//		} else {
+//			c.Header("Content-Type", "application/json")
+//			c.JSON(http.StatusOK, resp)
+//		}
+//	}
 func (s *Server) UserUrls(c *gin.Context) {
-	var otv models.GETUserLinks
+	userIDVal, _ := c.Get("userID")
+	userID, _ := userIDVal.(string)
+
 	var resp []models.GETUserLinks
-	userId, _ := app.GetUserId(c)
-	//if err != nil {
-	//	c.String(http.StatusUnauthorized, "Can't get user id")
-	//	return
-	//}
-	for key, value := range s.database.DataUsers {
-		if value == userId {
-			otv.OriginalUrl = s.database.Data[key]
-			otv.ShortUrl = s.Adr + key
+
+	// Проходимся по вашему s.database.DataUsers,
+	// где key = "короткийID", value = "userID".
+	// Если value == userID, значит этот короткийID принадлежит данному пользователю.
+	for key, val := range s.database.DataUsers {
+		if val == userID {
+			// Заполняем структуру
+			var otv models.GETUserLinks
+			otv.OriginalUrl = s.database.Data[key] // допустим, тут исходный URL
+			otv.ShortUrl = s.Adr + key             // s.Adr = "http://localhost:8080/" (?)
 			resp = append(resp, otv)
 		}
 	}
+
 	if len(resp) == 0 {
+		// Нет ссылок
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusNoContent, gin.H{"message": "No links"})
 		return
-	} else {
-		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusOK, resp)
 	}
+
+	// Если есть ссылки
+	c.Header("Content-Type", "application/json")
+	c.JSON(http.StatusOK, resp)
 }
 
+//	func AuthMiddleware() gin.HandlerFunc {
+//		return func(c *gin.Context) {
+//			authHeader := c.GetHeader("Authorization")
+//
+//			// Будем искать префикс "Bearer "
+//			var bearerToken string
+//			if strings.HasPrefix(authHeader, "Bearer ") {
+//				// Убираем префикс "Bearer "
+//				bearerToken = strings.TrimPrefix(authHeader, "Bearer ")
+//			}
+//
+//			// Если токен пустой - возвращаем 401
+//			if bearerToken == "" {
+//				c.Status(http.StatusUnauthorized)
+//				return
+//			}
+//
+//			userID := app.GenerateShortID([]byte(bearerToken))
+//			c.Set("user_id", userID)
+//
+//			// Иначе продолжаем - для примера просто вернем полученный токен в ответе
+//
+//			data, _ := json.Marshal(models.UserCookie{
+//				UserID: userID,
+//				Sign:   app.SignUserID(userID),
+//			})
+//
+//			c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+//
+//			// Сохранение user_id в контексте
+//			c.Set("userID", userID)
+//			c.Next()
+//		}
+//	}
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
+		// Пытаемся получить куку "user_id" (имя возьмите из config.CookieName, если у вас так)
+		cookieVal, err := c.Cookie(config.CookieName)
+		if err != nil {
+			// Куки нет -> генерируем нового userID
+			newUserID := app.GenerateShortID([]byte(uuid.New().String())) // или UUID
+			sign := app.SignUserID(newUserID)
 
-		// Будем искать префикс "Bearer "
-		var bearerToken string
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			// Убираем префикс "Bearer "
-			bearerToken = strings.TrimPrefix(authHeader, "Bearer ")
+			// Собираем JSON, как у вас в models.UserCookie
+			data, _ := json.Marshal(models.UserCookie{
+				UserID: newUserID,
+				Sign:   sign,
+			})
+
+			// Отправляем новую куку
+			c.SetCookie(
+				config.CookieName,
+				string(data),
+				3600*24, // срок жизни 1 день
+				"/",
+				"",    // домен, если надо
+				false, // Secure=true если HTTPS
+				true,  // HttpOnly
+			)
+
+			// Кладём userID в context, чтобы хендлеры знали
+			c.Set("userID", newUserID)
+		} else {
+			// Кука есть -> распарсим
+			var uc models.UserCookie
+			if err := json.Unmarshal([]byte(cookieVal), &uc); err != nil {
+				// Кука битая -> генерируем заново
+				newUserID := app.GenerateShortID([]byte("some-random-seed"))
+				sign := app.SignUserID(newUserID)
+				data, _ := json.Marshal(models.UserCookie{UserID: newUserID, Sign: sign})
+
+				c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+				c.Set("userID", newUserID)
+			}
+
 		}
 
-		// Если токен пустой - возвращаем 401
-		if bearerToken == "" {
-			c.Status(http.StatusUnauthorized)
-			return
-		}
-
-		userID := app.GenerateShortID([]byte(bearerToken))
-		c.Set("user_id", userID)
-
-		// Иначе продолжаем - для примера просто вернем полученный токен в ответе
-
-		data, _ := json.Marshal(models.UserCookie{
-			UserID: userID,
-			Sign:   app.SignUserID(userID),
-		})
-
-		c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
-
-		// Сохранение user_id в контексте
-		c.Set("userID", userID)
-		c.Next()
+		c.Next() // идём в хендлер
 	}
 }
