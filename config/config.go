@@ -8,8 +8,8 @@ import (
 
 const (
 	CookieName = "auth_token"
-	SecretKey  = "supersecretkey"        //
-	Userslinks = "./tmp/userslinks.json" // Ключ для подписи куки (используйте ENV в продакшене)
+	SecretKey  = "supersecretkey"       //
+	Userslinks = "/tmp/userslinks.json" // Ключ для подписи куки (используйте ENV в продакшене)
 )
 
 // postgres://postgres:1234@localhost:5432/shorty
@@ -18,7 +18,7 @@ func ParseFlags() (string, string, string, string) {
 	// Значения по умолчанию
 	defaultHost := "localhost:8080"
 	defaultBaseURL := "http://localhost:8080/"
-	defaultPath := "./tmp/short-url-db.json"
+	defaultPath := "/tmp/short-url-db.json"
 	defaultDb := ""
 
 	// Флаги командной строки
