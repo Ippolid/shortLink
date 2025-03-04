@@ -189,11 +189,11 @@ func (s *Server) PostBatch(c *gin.Context) {
 func (s *Server) UserUrls(c *gin.Context) {
 	var otv models.GETUserLinks
 	var resp []models.GETUserLinks
-	userId, err := app.GetUserId(c)
-	if err != nil {
-		c.String(http.StatusUnauthorized, "Can't get user id")
-		return
-	}
+	userId, _ := app.GetUserId(c)
+	//if err != nil {
+	//	c.String(http.StatusUnauthorized, "Can't get user id")
+	//	return
+	//}
 	for key, value := range s.database.DataUsers {
 		if value == userId {
 			otv.OriginalUrl = s.database.Data[key]
