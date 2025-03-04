@@ -278,47 +278,40 @@ func (s *Server) UserUrls(c *gin.Context) {
 //	}
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Пытаемся получить куку "user_id" (имя возьмите из config.CookieName, если у вас так)
 		cookieVal, err := c.Cookie(config.CookieName)
 		if err != nil {
 			// Куки нет -> генерируем нового userID
-			newUserID := app.GenerateShortID([]byte(uuid.New().String())) // или UUID
+			newUserID := app.GenerateShortID([]byte(uuid.New().String()))
 			sign := app.SignUserID(newUserID)
 
-			// Собираем JSON, как у вас в models.UserCookie
 			data, _ := json.Marshal(models.UserCookie{
 				UserID: newUserID,
 				Sign:   sign,
 			})
+			c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
 
-			// Отправляем новую куку
-			c.SetCookie(
-				config.CookieName,
-				string(data),
-				3600*24, // срок жизни 1 день
-				"/",
-				"",    // домен, если надо
-				false, // Secure=true если HTTPS
-				true,  // HttpOnly
-			)
-
-			// Кладём userID в context, чтобы хендлеры знали
 			c.Set("userID", newUserID)
 		} else {
-			// Кука есть -> распарсим
+			// Кука есть -> пытаемся распарсить JSON
 			var uc models.UserCookie
 			if err := json.Unmarshal([]byte(cookieVal), &uc); err != nil {
-				// Кука битая -> генерируем заново
+				// Кука битая, генерируем заново
 				newUserID := app.GenerateShortID([]byte("some-random-seed"))
 				sign := app.SignUserID(newUserID)
 				data, _ := json.Marshal(models.UserCookie{UserID: newUserID, Sign: sign})
 
 				c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
 				c.Set("userID", newUserID)
-			}
+			} else {
+				// Кука целая. Если вы пропускаете проверку подписи –
+				// просто считаем userID = uc.UserID, и этого достаточно:
+				c.Set("userID", uc.UserID)
 
+				// Если хотите удалить логику подписи, уберите SignUserID().
+				// Тогда храните в куке лишь userID, без sign.
+			}
 		}
 
-		c.Next() // идём в хендлер
+		c.Next()
 	}
 }
