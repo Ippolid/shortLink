@@ -20,11 +20,11 @@ func (s *Server) PostCreate(c *gin.Context) {
 	}
 
 	id := app.GenerateShortID(val)
-	userId, err := app.GetUserId(c)
-	if err != nil {
-		c.String(http.StatusUnauthorized, "Can't get user id")
-		return
-	}
+	userId, _ := app.GetUserId(c)
+	//if err != nil {
+	//	c.String(http.StatusUnauthorized, "Can't get user id")
+	//	return
+	//}
 	if s.Db == nil {
 		_, exist := s.database.Data[id]
 		if exist {
@@ -111,11 +111,11 @@ func (s *Server) PostAPI(c *gin.Context) {
 	}
 
 	id := app.GenerateShortID([]byte(req.URL))
-	userId, err := app.GetUserId(c)
-	if err != nil {
-		c.String(http.StatusUnauthorized, "Can't get user id")
-		return
-	}
+	userId, _ := app.GetUserId(c)
+	//if err != nil {
+	//	c.String(http.StatusUnauthorized, "Can't get user id")
+	//	return
+	//}
 	if s.Db == nil {
 		_, exist := s.database.Data[id]
 		if exist {
@@ -157,11 +157,11 @@ func (s *Server) PostBatch(c *gin.Context) {
 	}
 	var otv models.PostBatchResp
 	var resp []models.PostBatchResp
-	userId, err := app.GetUserId(c)
-	if err != nil {
-		c.String(http.StatusUnauthorized, "Can't get user id")
-		return
-	}
+	userId, _ := app.GetUserId(c)
+	//if err != nil {
+	//	c.String(http.StatusUnauthorized, "Can't get user id")
+	//	return
+	//}
 	for _, r := range req {
 		if r.ID != "" && r.URL != "" {
 			otv.ID = r.ID
