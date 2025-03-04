@@ -202,13 +202,13 @@ func (s *Server) UserUrls(c *gin.Context) {
 		}
 	}
 	if len(resp) == 0 {
-		c.String(http.StatusNoContent, "No links")
+		c.Header("Content-Type", "application/json")
+		c.JSON(http.StatusNoContent, gin.H{"message": "No links"})
 		return
 	} else {
 		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusOK, resp)
 	}
-
 }
 
 func AuthMiddleware() gin.HandlerFunc {
