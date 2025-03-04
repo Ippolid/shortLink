@@ -211,34 +211,69 @@ func (s *Server) PostBatch(c *gin.Context) {
 //			c.JSON(http.StatusOK, resp)
 //		}
 //	}
+//
+//	func (s *Server) UserUrls(c *gin.Context) {
+//		userIDVal, _ := c.Get("userID")
+//		userID, _ := userIDVal.(string)
+//
+//		var resp []models.GETUserLinks
+//
+//		// Проходимся по вашему s.database.DataUsers,
+//		// где key = "короткийID", value = "userID".
+//		// Если value == userID, значит этот короткийID принадлежит данному пользователю.
+//		for key, val := range s.database.DataUsers {
+//			if val == userID {
+//				// Заполняем структуру
+//				var otv models.GETUserLinks
+//				otv.OriginalUrl = s.database.Data[key] // допустим, тут исходный URL
+//				otv.ShortUrl = s.Adr + key             // s.Adr = "http://localhost:8080/" (?)
+//				resp = append(resp, otv)
+//			}
+//		}
+//
+//		if len(resp) == 0 {
+//			// Нет ссылок
+//			c.Header("Content-Type", "application/json")
+//			c.JSON(http.StatusNoContent, gin.H{"message": "No links"})
+//			return
+//		}
+//
+//		// Если есть ссылки
+//		c.Header("Content-Type", "application/json")
+//		c.JSON(http.StatusOK, resp)
+//	}
 func (s *Server) UserUrls(c *gin.Context) {
 	userIDVal, _ := c.Get("userID")
 	userID, _ := userIDVal.(string)
 
 	var resp []models.GETUserLinks
 
-	// Проходимся по вашему s.database.DataUsers,
-	// где key = "короткийID", value = "userID".
-	// Если value == userID, значит этот короткийID принадлежит данному пользователю.
-	for key, val := range s.database.DataUsers {
-		if val == userID {
-			// Заполняем структуру
-			var otv models.GETUserLinks
-			otv.OriginalUrl = s.database.Data[key] // допустим, тут исходный URL
-			otv.ShortUrl = s.Adr + key             // s.Adr = "http://localhost:8080/" (?)
-			resp = append(resp, otv)
+	// Если используется база данных
+	if s.Db != nil {
+		links, err := s.Db.GetUserLinks(userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+			return
+		}
+		for _, link := range links {
+			resp = append(resp, models.GETUserLinks{
+				OriginalUrl: link.OriginalURL,
+				ShortUrl:    s.Adr + link.ShortID,
+			})
+		}
+	} else {
+		// Логика для in-memory базы
+		for key, val := range s.database.DataUsers {
+			if val == userID {
+				resp = append(resp, models.GETUserLinks{
+					OriginalUrl: s.database.Data[key],
+					ShortUrl:    s.Adr + key,
+				})
+			}
 		}
 	}
 
-	if len(resp) == 0 {
-		// Нет ссылок
-		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusNoContent, gin.H{"message": "No links"})
-		return
-	}
-
-	// Если есть ссылки
-	c.Header("Content-Type", "application/json")
+	// Всегда возвращаем 200, даже если массив пуст
 	c.JSON(http.StatusOK, resp)
 }
 
