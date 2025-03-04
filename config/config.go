@@ -6,6 +6,11 @@ import (
 	"os"
 )
 
+const (
+	CookieName = "auth_token"
+	SecretKey  = "supersecretkey" // Ключ для подписи куки (используйте ENV в продакшене)
+)
+
 // postgres://postgres:1234@localhost:5432/shorty
 // ParseFlags обрабатывает флаги и переменные окружения
 func ParseFlags() (string, string, string, string) {
