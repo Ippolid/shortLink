@@ -5,10 +5,9 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/Ippolid/shortLink/config"
-	"github.com/Ippolid/shortLink/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 func GenerateShortID(url []byte) string {
@@ -23,20 +22,11 @@ func SignUserID(userID string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func ValidateCookie(value string) (string, bool) {
-	var data models.UserCookie
-
-	err := json.Unmarshal([]byte(value), &data)
-
-	fmt.Println(data)
-	if err != nil {
-		return "", false
+func GetUserId(c *gin.Context) (string, error) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		return "", fmt.Errorf("user id not found")
 	}
 
-	expectedSign := SignUserID(data.UserID)
-	if data.Sign != expectedSign {
-		return "", false
-	}
-
-	return data.UserID, true
+	return userIDVal.(string), nil
 }

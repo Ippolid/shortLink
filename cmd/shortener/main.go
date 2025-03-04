@@ -32,6 +32,9 @@ func main() {
 		if err := db.ReadLocal(storagePath); err != nil {
 			log.Fatalf("Ошибка загрузки данных: %v", err)
 		}
+		if err := db.ReadLocalUsers(config.Userslinks); err != nil {
+			log.Fatalf("Ошибка загрузки данных: %v", err)
+		}
 		server = handlerserver.New(&db, baseURL, host, nil)
 	} else {
 
@@ -73,10 +76,16 @@ func main() {
 	cancel()
 
 	// Даём время для завершения активных соединений
-	time.Sleep(2 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	// Сохранение данных перед выходом
 	if err := db.WriteLocal(storagePath); err != nil {
+		fmt.Printf("Ошибка сохранения данных: %v\n", err)
+	} else {
+		fmt.Println("Данные успешно сохранены")
+	}
+
+	if err := db.WriteLocalUsers(config.Userslinks); err != nil {
 		fmt.Printf("Ошибка сохранения данных: %v\n", err)
 	} else {
 		fmt.Println("Данные успешно сохранены")

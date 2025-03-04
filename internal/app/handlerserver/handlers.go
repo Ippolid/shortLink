@@ -3,6 +3,7 @@ package handlerserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Ippolid/shortLink/config"
 	"github.com/Ippolid/shortLink/internal/app"
 	"github.com/Ippolid/shortLink/internal/models"
 	"github.com/gin-gonic/gin"
@@ -19,6 +20,11 @@ func (s *Server) PostCreate(c *gin.Context) {
 	}
 
 	id := app.GenerateShortID(val)
+	userId, err := app.GetUserId(c)
+	if err != nil {
+		c.String(http.StatusUnauthorized, "Can't get user id")
+		return
+	}
 	if s.Db == nil {
 		_, exist := s.database.Data[id]
 		if exist {
@@ -26,6 +32,7 @@ func (s *Server) PostCreate(c *gin.Context) {
 			return
 		}
 		s.database.SaveLink(val, id)
+		s.database.SaveUsersLink(userId, id)
 	} else {
 		err = s.Db.InsertLink(id, string(val))
 		if err != nil {
@@ -48,6 +55,7 @@ func (s *Server) GetID(c *gin.Context) {
 	var err error
 	var exist bool
 	id := c.Param("id")
+
 	if s.Db == nil {
 		val, exist = s.database.Data[id]
 		if !exist {
@@ -86,27 +94,13 @@ func (s *Server) PingDB(c *gin.Context) {
 }
 
 func (s *Server) TestCookie(c *gin.Context) {
-	authHeader := c.GetHeader("Authorization")
-
-	// Будем искать префикс "Bearer "
-	var bearerToken string
-	if strings.HasPrefix(authHeader, "Bearer ") {
-		// Убираем префикс "Bearer "
-		bearerToken = strings.TrimPrefix(authHeader, "Bearer ")
-	}
-
-	// Если токен пустой - возвращаем 401
-	if bearerToken == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "no valid bearer token found",
-		})
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.Status(http.StatusUnauthorized)
 		return
 	}
 
-	// Иначе продолжаем - для примера просто вернем полученный токен в ответе
-	c.JSON(http.StatusOK, gin.H{
-		"bearer_token": bearerToken,
-	})
+	c.JSON(http.StatusOK, userIDVal)
 }
 
 func (s *Server) PostAPI(c *gin.Context) {
@@ -117,6 +111,11 @@ func (s *Server) PostAPI(c *gin.Context) {
 	}
 
 	id := app.GenerateShortID([]byte(req.URL))
+	userId, err := app.GetUserId(c)
+	if err != nil {
+		c.String(http.StatusUnauthorized, "Can't get user id")
+		return
+	}
 	if s.Db == nil {
 		_, exist := s.database.Data[id]
 		if exist {
@@ -127,6 +126,7 @@ func (s *Server) PostAPI(c *gin.Context) {
 			return
 		}
 		s.database.SaveLink([]byte(req.URL), id)
+		s.database.SaveUsersLink(userId, id)
 	} else {
 		err := s.Db.InsertLink(id, req.URL)
 		if err != nil {
@@ -157,6 +157,11 @@ func (s *Server) PostBatch(c *gin.Context) {
 	}
 	var otv models.PostBatchResp
 	var resp []models.PostBatchResp
+	userId, err := app.GetUserId(c)
+	if err != nil {
+		c.String(http.StatusUnauthorized, "Can't get user id")
+		return
+	}
 	for _, r := range req {
 		if r.ID != "" && r.URL != "" {
 			otv.ID = r.ID
@@ -165,6 +170,7 @@ func (s *Server) PostBatch(c *gin.Context) {
 
 			if s.Db == nil {
 				s.database.SaveLink([]byte(r.URL), k)
+				s.database.SaveUsersLink(userId, r.ID)
 			} else {
 				err := s.Db.InsertLink(k, r.URL)
 				if err != nil {
@@ -180,52 +186,62 @@ func (s *Server) PostBatch(c *gin.Context) {
 	c.JSON(http.StatusCreated, resp)
 }
 
-//	func AuthMiddleware() gin.HandlerFunc {
-//		//return func(c *gin.Context) {
-//		//	cookie, err := c.Cookie(config.CookieName)
-//		//	var userID string
-//		//
-//		//	if err != nil || userID, _ = app.ValidateCookie(cookie); err != nil {
-//		//		// Генерация нового user_id
-//		//		userID = uuid.NewString()
-//		//		db.Create(&User{ID: userID})
-//		//
-//		//		// Создание подписанной куки
-//		//		data, _ := json.Marshal(map[string]string{
-//		//			"user_id": userID,
-//		//			"sign":    signUserID(userID),
-//		//		})
-//		//
-//		//		c.SetCookie(cookieName, string(data), 3600*24, "/", "", false, true)
-//		//	}
-//		//
-//		//	// Сохранение user_id в контексте
-//		//	c.Set("user_id", userID)
-//		//	c.Next()
-//		return func(c *gin.Context) {
-//			cookie, err := c.Cookie(config.CookieName)
-//			var userID string
-//
-//			// Если кука существует, проверяем её
-//			if err == nil {
-//				userID, _ = app.ValidateCookie(cookie)
-//			}
-//
-//			// Если куки нет или она невалидна, создаем новую
-//			if err != nil || userID == "" {
-//				userID = uuid.NewString()
-//
-//				// Создание подписанной куки
-//				data, _ := json.Marshal(models.UserCookie{
-//					UserID: userID,
-//					Sign:   app.SignUserID(userID),
-//				})
-//
-//				c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
-//			}
-//
-//			// Сохранение user_id в контексте
-//			c.Set("user_id", userID)
-//			c.Next()
-//		}
-//	}
+func (s *Server) UserUrls(c *gin.Context) {
+	var otv models.GETUserLinks
+	var resp []models.GETUserLinks
+	userId, err := app.GetUserId(c)
+	if err != nil {
+		c.String(http.StatusUnauthorized, "Can't get user id")
+		return
+	}
+	for key, value := range s.database.DataUsers {
+		if value == userId {
+			otv.OriginalUrl = s.database.Data[key]
+			otv.ShortUrl = s.Adr + key
+			resp = append(resp, otv)
+		}
+	}
+	if len(resp) == 0 {
+		c.String(http.StatusNoContent, "No links")
+		return
+	} else {
+		c.Header("Content-Type", "application/json")
+		c.JSON(http.StatusOK, resp)
+	}
+
+}
+
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+
+		// Будем искать префикс "Bearer "
+		var bearerToken string
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			// Убираем префикс "Bearer "
+			bearerToken = strings.TrimPrefix(authHeader, "Bearer ")
+		}
+
+		// Если токен пустой - возвращаем 401
+		if bearerToken == "" {
+			c.Status(http.StatusUnauthorized)
+			return
+		}
+
+		userID := app.GenerateShortID([]byte(bearerToken))
+		c.Set("user_id", userID)
+
+		// Иначе продолжаем - для примера просто вернем полученный токен в ответе
+
+		data, _ := json.Marshal(models.UserCookie{
+			UserID: userID,
+			Sign:   app.SignUserID(userID),
+		})
+
+		c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+
+		// Сохранение user_id в контексте
+		c.Set("userID", userID)
+		c.Next()
+	}
+}

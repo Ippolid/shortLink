@@ -30,7 +30,7 @@ func (s *Server) newServer() *gin.Engine {
 	engine.Use(logger.RequestLogger())
 	engine.Use(gzipDecompressMiddleware()) // Декомпрессия входящих запросов
 	engine.Use(gzipMiddleware())
-	//engine.Use(AuthMiddleware())
+	engine.Use(AuthMiddleware())
 
 	engine.POST(
 		"/",
@@ -53,6 +53,10 @@ func (s *Server) newServer() *gin.Engine {
 
 	engine.GET("/api/test",
 		s.TestCookie,
+	)
+
+	engine.GET("/api/user/urls",
+		s.UserUrls,
 	)
 
 	engine.NoRoute(func(c *gin.Context) {
