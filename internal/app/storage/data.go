@@ -1,16 +1,17 @@
 package storage
 
 type Dbase struct {
-	Data      map[string]string
-	DataUsers map[string]string
+	Data      map[string]string // shortID -> originalURL
+	DataUsers map[string]string // shortID -> userID
+	Deleted   map[string]bool   // shortID -> true/false
 }
 
 func NewDbase() Dbase {
-	s := Dbase{
+	return Dbase{
 		Data:      make(map[string]string),
 		DataUsers: make(map[string]string),
+		Deleted:   make(map[string]bool),
 	}
-	return s
 }
 
 func (s *Dbase) SaveLink(url []byte, id string) {

@@ -54,35 +54,35 @@ func (s *Server) PostCreate(c *gin.Context) {
 	c.String(http.StatusCreated, s.Adr+id)
 }
 
-func (s *Server) GetID(c *gin.Context) {
-	var val string
-	var err error
-	var exist bool
-	id := c.Param("id")
-
-	if s.Db == nil {
-		val, exist = s.database.Data[id]
-		if !exist {
-			c.String(http.StatusBadRequest, "Can't find link")
-			return
-		}
-	} else {
-		val, err = s.Db.GetLink(id)
-		if err != nil {
-			c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
-			return
-		}
-	}
-
-	fmt.Println(val)
-	if err != nil {
-		c.String(http.StatusBadRequest, "Can't find link")
-		return
-	}
-
-	c.Header("content-type", "text/plain")
-	c.Redirect(http.StatusTemporaryRedirect, val)
-}
+//func (s *Server) GetID(c *gin.Context) {
+//	var val string
+//	var err error
+//	var exist bool
+//	id := c.Param("id")
+//
+//	if s.Db == nil {
+//		val, exist = s.database.Data[id]
+//		if !exist {
+//			c.String(http.StatusBadRequest, "Can't find link")
+//			return
+//		}
+//	} else {
+//		val, err = s.Db.GetLink(id)
+//		if err != nil {
+//			c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
+//			return
+//		}
+//	}
+//
+//	fmt.Println(val)
+//	if err != nil {
+//		c.String(http.StatusBadRequest, "Can't find link")
+//		return
+//	}
+//
+//	c.Header("content-type", "text/plain")
+//	c.Redirect(http.StatusTemporaryRedirect, val)
+//}
 
 func (s *Server) PingDB(c *gin.Context) {
 	b, err := s.Db.Ping()
@@ -214,36 +214,36 @@ func (s *Server) PostBatch(c *gin.Context) {
 //			c.JSON(http.StatusOK, resp)
 //		}
 //	}
-func (s *Server) UserUrls(c *gin.Context) {
-	userIDVal, _ := c.Get("userID")
-	userID, _ := userIDVal.(string)
-
-	var resp []models.GETUserLinks
-
-	// Проходимся по вашему s.database.DataUsers,
-	// где key = "короткийID", value = "userID".
-	// Если value == userID, значит этот короткийID принадлежит данному пользователю.
-	for key, val := range s.database.DataUsers {
-		if val == userID {
-			// Заполняем структуру
-			var otv models.GETUserLinks
-			otv.OriginalUrl = s.database.Data[key] // допустим, тут исходный URL
-			otv.ShortUrl = s.Adr + key             // s.Adr = "http://localhost:8080/" (?)
-			resp = append(resp, otv)
-		}
-	}
-
-	if len(resp) == 0 {
-		// Нет ссылок
-		c.Header("Content-Type", "application/json")
-		c.JSON(http.StatusNoContent, gin.H{"message": "No links"})
-		return
-	}
-
-	// Если есть ссылки
-	c.Header("Content-Type", "application/json")
-	c.JSON(http.StatusOK, resp)
-}
+//func (s *Server) UserUrls(c *gin.Context) {
+//	userIDVal, _ := c.Get("userID")
+//	userID, _ := userIDVal.(string)
+//
+//	var resp []models.GETUserLinks
+//
+//	// Проходимся по вашему s.database.DataUsers,
+//	// где key = "короткийID", value = "userID".
+//	// Если value == userID, значит этот короткийID принадлежит данному пользователю.
+//	for key, val := range s.database.DataUsers {
+//		if val == userID {
+//			// Заполняем структуру
+//			var otv models.GETUserLinks
+//			otv.OriginalUrl = s.database.Data[key] // допустим, тут исходный URL
+//			otv.ShortUrl = s.Adr + key             // s.Adr = "http://localhost:8080/" (?)
+//			resp = append(resp, otv)
+//		}
+//	}
+//
+//	if len(resp) == 0 {
+//		// Нет ссылок
+//		c.Header("Content-Type", "application/json")
+//		c.JSON(http.StatusNoContent, gin.H{"message": "No links"})
+//		return
+//	}
+//
+//	// Если есть ссылки
+//	c.Header("Content-Type", "application/json")
+//	c.JSON(http.StatusOK, resp)
+//}
 
 //	func AuthMiddleware() gin.HandlerFunc {
 //		return func(c *gin.Context) {
@@ -279,59 +279,155 @@ func (s *Server) UserUrls(c *gin.Context) {
 //			c.Next()
 //		}
 //	}
+//func AuthMiddleware() gin.HandlerFunc {
+//return func(c *gin.Context) {
+//	cookieVal, err := c.Cookie(config.CookieName)
+//	fmt.Println(cookieVal)
+//	if err != nil {
+//		// Куки нет -> генерируем нового userID
+//		newUserID := app.GenerateShortID([]byte(uuid.New().String()))
+//		sign := app.SignUserID(newUserID)
+//
+//		data, _ := json.Marshal(models.UserCookie{
+//			UserID: newUserID,
+//			Sign:   sign,
+//		})
+//		c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+//
+//		c.Set("userID", newUserID)
+//	} else {
+//		// Кука есть -> пытаемся распарсить JSON
+//		var uc models.UserCookie
+//		if err := json.Unmarshal([]byte(cookieVal), &uc); err != nil {
+//			// Кука битая, генерируем заново
+//			newUserID := app.GenerateShortID([]byte("fd"))
+//			sign := app.SignUserID(newUserID)
+//			data, _ := json.Marshal(models.UserCookie{UserID: newUserID, Sign: sign})
+//
+//			c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+//			c.Set("userID", newUserID)
+//		} else {
+//			// Кука целая. Если вы пропускаете проверку подписи –
+//			// просто считаем userID = uc.UserID, и этого достаточно:
+//			c.Set("userID", uc.UserID)
+//
+//			// Если хотите удалить логику подписи, уберите SignUserID().
+//			// Тогда храните в куке лишь userID, без sign.
+//		}
+//	}
+//	c.Next()
+//}
+
+func (s *Server) GetID(c *gin.Context) {
+	id := c.Param("id")
+
+	// 1) Проверяем, не удалён ли
+	if s.database.Deleted[id] {
+		c.Status(http.StatusGone)
+		return
+	}
+
+	// 2) Ищем URL
+	var val string
+	var exist bool
+	var err error
+
+	if s.Db == nil {
+		val, exist = s.database.Data[id]
+		if !exist {
+			c.String(http.StatusBadRequest, "Can't find link")
+			return
+		}
+	} else {
+		val, err = s.Db.GetLink(id)
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при обращении к дб: %v", err))
+			return
+		}
+	}
+
+	c.Redirect(http.StatusTemporaryRedirect, val)
+}
+
+// DeleteUserURLs - удаление коротких ссылок текущего пользователя
+func (s *Server) DeleteUserURLs(c *gin.Context) {
+	userIDVal, ok := c.Get("userID")
+	if !ok {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	userID, _ := userIDVal.(string)
+	if userID == "" {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	var shortIDs []string
+	if err := json.NewDecoder(c.Request.Body).Decode(&shortIDs); err != nil {
+		c.String(http.StatusBadRequest, "Invalid JSON data")
+		return
+	}
+
+	// "Асинхронная" пометка удалёнными
+	go func() {
+		for _, sid := range shortIDs {
+			if s.database.DataUsers[sid] == userID {
+				s.database.Deleted[sid] = true
+			}
+		}
+	}()
+
+	c.Status(http.StatusAccepted)
+}
+
+// UserUrls - GET /api/user/urls - возвращает все ссылки пользователя
+func (s *Server) UserUrls(c *gin.Context) {
+	userIDVal, ok := c.Get("userID")
+	if !ok {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	userID, _ := userIDVal.(string)
+	if userID == "" {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	var resp []models.GETUserLinks
+	for shortID, uid := range s.database.DataUsers {
+		if uid == userID {
+			resp = append(resp, models.GETUserLinks{
+				ShortUrl:    s.Adr + shortID,
+				OriginalUrl: s.database.Data[shortID],
+			})
+		}
+	}
+
+	if len(resp) == 0 {
+		// Нет ссылок
+		c.Header("Content-Type", "application/json")
+		c.JSON(http.StatusNoContent, gin.H{"message": "No links"})
+		return
+	}
+
+	c.Header("Content-Type", "application/json")
+	c.JSON(http.StatusOK, resp)
+}
+
+// Пример AuthMiddleware, который даёт куку, если её нет или битая.
+// Если нет Bearer-токена, userID = "" => пользователь гость
 func AuthMiddleware() gin.HandlerFunc {
-	//return func(c *gin.Context) {
-	//	cookieVal, err := c.Cookie(config.CookieName)
-	//	fmt.Println(cookieVal)
-	//	if err != nil {
-	//		// Куки нет -> генерируем нового userID
-	//		newUserID := app.GenerateShortID([]byte(uuid.New().String()))
-	//		sign := app.SignUserID(newUserID)
-	//
-	//		data, _ := json.Marshal(models.UserCookie{
-	//			UserID: newUserID,
-	//			Sign:   sign,
-	//		})
-	//		c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
-	//
-	//		c.Set("userID", newUserID)
-	//	} else {
-	//		// Кука есть -> пытаемся распарсить JSON
-	//		var uc models.UserCookie
-	//		if err := json.Unmarshal([]byte(cookieVal), &uc); err != nil {
-	//			// Кука битая, генерируем заново
-	//			newUserID := app.GenerateShortID([]byte("fd"))
-	//			sign := app.SignUserID(newUserID)
-	//			data, _ := json.Marshal(models.UserCookie{UserID: newUserID, Sign: sign})
-	//
-	//			c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
-	//			c.Set("userID", newUserID)
-	//		} else {
-	//			// Кука целая. Если вы пропускаете проверку подписи –
-	//			// просто считаем userID = uc.UserID, и этого достаточно:
-	//			c.Set("userID", uc.UserID)
-	//
-	//			// Если хотите удалить логику подписи, уберите SignUserID().
-	//			// Тогда храните в куке лишь userID, без sign.
-	//		}
-	//	}
-	//	c.Next()
-	//}
 	return func(c *gin.Context) {
-		// 1) Считать Bearer-токен из заголовка Authorization (если есть)
 		authHeader := c.GetHeader("Authorization")
 		var bearerToken string
 		if strings.HasPrefix(authHeader, "Bearer ") {
 			bearerToken = strings.TrimSpace(authHeader[len("Bearer "):])
 		}
 
-		// 2) Считать куку
 		cookieVal, err := c.Cookie(config.CookieName)
 
-		// 3) Логика обработки
 		if err != nil {
-			// Куки нет или невозможно прочесть:
-			// Генерируем новый userID и ставим куку (если Bearer не пуст)
+			// Куки нет
 			if bearerToken != "" {
 				newUserID := app.GenerateShortID([]byte(bearerToken + uuid.New().String()))
 				sign := app.SignUserID(newUserID)
@@ -344,19 +440,17 @@ func AuthMiddleware() gin.HandlerFunc {
 				c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
 				c.Set("userID", newUserID)
 			} else {
-				// Если вообще нет Bearer-токена — решайте, что делать:
-				// например, пропускаем пользователя как "гостя" без куки
+				// Нет Bearer -> гость
 				c.Set("userID", "")
 			}
 		} else {
-			// Кука существует -> пробуем распарсить JSON
+			// Кука есть -> разбираем
 			var uc models.UserCookie
 			if err := json.Unmarshal([]byte(cookieVal), &uc); err != nil {
-				// Кука "битая" (не JSON) — создаём новую при наличии bearer
+				// битая кука
 				if bearerToken != "" {
 					newUserID := app.GenerateShortID([]byte(bearerToken + uuid.New().String()))
 					sign := app.SignUserID(newUserID)
-
 					data, _ := json.Marshal(models.UserCookie{
 						Bearer: bearerToken,
 						UserID: newUserID,
@@ -365,22 +459,18 @@ func AuthMiddleware() gin.HandlerFunc {
 					c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
 					c.Set("userID", newUserID)
 				} else {
-					// Нет Bearer-токена — пусть будет "гость"
 					c.Set("userID", "")
 				}
 			} else {
-				// Кука корректно распарсилась
-				// Проверка, что кука соответствует текущему Bearer-токену
+				// Кука корректная
 				if bearerToken == "" {
-					// Нет Bearer, но кука есть — возможно, вы хотите сбросить куку
-					// Либо "гостевой" сценарий — решайте логику
+					// Нет Bearer, но есть кука
+					// Значит гость? Или пользователь без Bearer. Ок — userID=""
 					c.Set("userID", "")
 				} else if uc.Bearer != bearerToken {
-					// Bearer-токен в запросе не совпадает с Bearer в куке —
-					// генерируем новую куку, т. к. пользователь пришёл с другим токеном
+					// Пришёл другой Bearer
 					newUserID := app.GenerateShortID([]byte(bearerToken + uuid.New().String()))
 					sign := app.SignUserID(newUserID)
-
 					data, _ := json.Marshal(models.UserCookie{
 						Bearer: bearerToken,
 						UserID: newUserID,
@@ -389,14 +479,7 @@ func AuthMiddleware() gin.HandlerFunc {
 					c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
 					c.Set("userID", newUserID)
 				} else {
-					// Bearer совпадает
-					// Опционально проверяем подпись, если используете
-					// if !app.VerifySignature(uc.UserID, uc.Sign) {
-					//     // Подпись не прошла — сгенерировать заново
-					//     ...
-					// }
-
-					// Иначе всё ок — работаем с имеющимся userID
+					// Всё совпадает
 					c.Set("userID", uc.UserID)
 				}
 			}
