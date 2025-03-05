@@ -21,38 +21,73 @@ func (s *Server) PostCreate(c *gin.Context) {
 	}
 
 	id := app.GenerateShortID(val)
-	userId, _ := app.GetUserId(c)
-	//if err != nil {
-	//	c.String(http.StatusUnauthorized, "Can't get user id")
-	//	return
-	//}
-	fmt.Println(userId)
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.String(http.StatusUnauthorized, "Can't get user ID")
+		return
+	}
+
+	userIDStr, _ := userID.(string)
+
 	if s.Db == nil {
-		_, exist := s.database.Data[id]
-		val2, _ := s.database.DataUsers[id]
-		if exist && val2 == userId {
+		if _, exist := s.database.Data[id]; exist {
 			c.String(http.StatusConflict, s.Adr+id)
 			return
 		}
 		s.database.SaveLink(val, id)
-		s.database.SaveUsersLink(userId, id)
+		s.database.SaveUsersLink(userIDStr, id)
 	} else {
 		err = s.Db.InsertLink(id, string(val))
 		if err != nil {
-			fmt.Println(err)
-			if strings.Contains(err.Error(), "link exists") {
-				c.String(http.StatusConflict, s.Adr+id)
-				return
-			}
 			c.String(http.StatusBadRequest, fmt.Sprintf("Can't save link: %v", err))
 			return
 		}
 	}
 
 	c.Header("content-type", "text/plain")
-	fmt.Println(s.database.DataUsers)
 	c.String(http.StatusCreated, s.Adr+id)
 }
+
+//func (s *Server) PostCreate(c *gin.Context) {
+//	val, err := io.ReadAll(c.Request.Body)
+//	if err != nil {
+//		c.String(http.StatusBadRequest, "Can't read body")
+//		return
+//	}
+//
+//	id := app.GenerateShortID(val)
+//	userId, _ := app.GetUserId(c)
+//	//if err != nil {
+//	//	c.String(http.StatusUnauthorized, "Can't get user id")
+//	//	return
+//	//}
+//	fmt.Println(userId)
+//	if s.Db == nil {
+//		_, exist := s.database.Data[id]
+//		val2, _ := s.database.DataUsers[id]
+//		if exist && val2 == userId {
+//			c.String(http.StatusConflict, s.Adr+id)
+//			return
+//		}
+//		s.database.SaveLink(val, id)
+//		s.database.SaveUsersLink(userId, id)
+//	} else {
+//		err = s.Db.InsertLink(id, string(val))
+//		if err != nil {
+//			fmt.Println(err)
+//			if strings.Contains(err.Error(), "link exists") {
+//				c.String(http.StatusConflict, s.Adr+id)
+//				return
+//			}
+//			c.String(http.StatusBadRequest, fmt.Sprintf("Can't save link: %v", err))
+//			return
+//		}
+//	}
+//
+//	c.Header("content-type", "text/plain")
+//	fmt.Println(s.database.DataUsers)
+//	c.String(http.StatusCreated, s.Adr+id)
+//}
 
 //func (s *Server) GetID(c *gin.Context) {
 //	var val string
@@ -382,11 +417,12 @@ func (s *Server) DeleteUserURLs(c *gin.Context) {
 
 // UserUrls - GET /api/user/urls - возвращает все ссылки пользователя
 func (s *Server) UserUrls(c *gin.Context) {
-	userIDVal, ok := c.Get("userID")
-	if !ok {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
+
 	userID, _ := userIDVal.(string)
 	if userID == "" {
 		c.Status(http.StatusUnauthorized)
@@ -394,6 +430,7 @@ func (s *Server) UserUrls(c *gin.Context) {
 	}
 
 	var resp []models.GETUserLinks
+
 	for shortID, uid := range s.database.DataUsers {
 		if uid == userID {
 			resp = append(resp, models.GETUserLinks{
@@ -403,14 +440,13 @@ func (s *Server) UserUrls(c *gin.Context) {
 		}
 	}
 
+	c.Header("Content-Type", "application/json")
+
 	if len(resp) == 0 {
-		// Нет ссылок
-		c.Header("Content-Type", "application/json")
 		c.JSON(http.StatusNoContent, gin.H{"message": "No links"})
 		return
 	}
 
-	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusOK, resp)
 }
 
@@ -419,7 +455,7 @@ func (s *Server) UserUrls(c *gin.Context) {
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		var bearerToken string
+		var bearerToken = ""
 		if strings.HasPrefix(authHeader, "Bearer ") {
 			bearerToken = strings.TrimSpace(authHeader[len("Bearer "):])
 		}
@@ -427,64 +463,46 @@ func AuthMiddleware() gin.HandlerFunc {
 		cookieVal, err := c.Cookie(config.CookieName)
 
 		if err != nil {
-			// Куки нет
+			var sign string
+			var newUserID string
+			// Куки нет -> создаём новую
 			if bearerToken != "" {
-				newUserID := app.GenerateShortID([]byte(bearerToken + uuid.New().String()))
+				newUserID = app.GenerateShortID([]byte(bearerToken))
+				sign = app.SignUserID(newUserID)
+			} else {
+				newUserID := app.GenerateShortID([]byte(uuid.New().String()))
+				sign = app.SignUserID(newUserID)
+			}
+
+			data, _ := json.Marshal(models.UserCookie{
+				UserID: newUserID,
+				Sign:   sign,
+			})
+
+			c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+
+			c.Set("userID", newUserID)
+		} else {
+			// Кука есть -> разбираем её
+			var uc models.UserCookie
+			if err := json.Unmarshal([]byte(cookieVal), &uc); err != nil {
+				// Битая кука -> пересоздаём
+				newUserID := app.GenerateShortID([]byte(uuid.New().String()))
 				sign := app.SignUserID(newUserID)
 
 				data, _ := json.Marshal(models.UserCookie{
-					Bearer: bearerToken,
 					UserID: newUserID,
 					Sign:   sign,
 				})
+
 				c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
 				c.Set("userID", newUserID)
 			} else {
-				// Нет Bearer -> гость
-				c.Set("userID", "")
-			}
-		} else {
-			// Кука есть -> разбираем
-			var uc models.UserCookie
-			if err := json.Unmarshal([]byte(cookieVal), &uc); err != nil {
-				// битая кука
-				if bearerToken != "" {
-					newUserID := app.GenerateShortID([]byte(bearerToken + uuid.New().String()))
-					sign := app.SignUserID(newUserID)
-					data, _ := json.Marshal(models.UserCookie{
-						Bearer: bearerToken,
-						UserID: newUserID,
-						Sign:   sign,
-					})
-					c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
-					c.Set("userID", newUserID)
-				} else {
-					c.Set("userID", "")
-				}
-			} else {
-				// Кука корректная
-				if bearerToken == "" {
-					// Нет Bearer, но есть кука
-					// Значит гость? Или пользователь без Bearer. Ок — userID=""
-					c.Set("userID", "")
-				} else if uc.Bearer != bearerToken {
-					// Пришёл другой Bearer
-					newUserID := app.GenerateShortID([]byte(bearerToken + uuid.New().String()))
-					sign := app.SignUserID(newUserID)
-					data, _ := json.Marshal(models.UserCookie{
-						Bearer: bearerToken,
-						UserID: newUserID,
-						Sign:   sign,
-					})
-					c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
-					c.Set("userID", newUserID)
-				} else {
-					// Всё совпадает
-					c.Set("userID", uc.UserID)
-				}
+				// Кука нормальная -> читаем userID
+				c.Set("userID", uc.UserID)
 			}
 		}
-
+		fmt.Println(c.Get("userID"))
 		c.Next()
 	}
 }
