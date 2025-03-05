@@ -32,7 +32,12 @@ type GETUserLinks struct {
 	OriginalUrl string `json:"original_url"`
 }
 
+//	type UserCookie struct {
+//		UserID string `json:"user_id"`
+//		Sign   string `json:"sign"`
+//	}
 type UserCookie struct {
+	Bearer string `json:"bearer"`
 	UserID string `json:"user_id"`
-	Sign   string `json:"sign"`
+	Sign   string `json:"sign,omitempty"` // Если используете подпись
 }

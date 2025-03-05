@@ -26,9 +26,11 @@ func (s *Server) PostCreate(c *gin.Context) {
 	//	c.String(http.StatusUnauthorized, "Can't get user id")
 	//	return
 	//}
+	fmt.Println(userId)
 	if s.Db == nil {
 		_, exist := s.database.Data[id]
-		if exist {
+		val2, _ := s.database.DataUsers[id]
+		if exist && val2 == userId {
 			c.String(http.StatusConflict, s.Adr+id)
 			return
 		}
@@ -48,6 +50,7 @@ func (s *Server) PostCreate(c *gin.Context) {
 	}
 
 	c.Header("content-type", "text/plain")
+	fmt.Println(s.database.DataUsers)
 	c.String(http.StatusCreated, s.Adr+id)
 }
 
@@ -277,38 +280,125 @@ func (s *Server) UserUrls(c *gin.Context) {
 //		}
 //	}
 func AuthMiddleware() gin.HandlerFunc {
+	//return func(c *gin.Context) {
+	//	cookieVal, err := c.Cookie(config.CookieName)
+	//	fmt.Println(cookieVal)
+	//	if err != nil {
+	//		// Куки нет -> генерируем нового userID
+	//		newUserID := app.GenerateShortID([]byte(uuid.New().String()))
+	//		sign := app.SignUserID(newUserID)
+	//
+	//		data, _ := json.Marshal(models.UserCookie{
+	//			UserID: newUserID,
+	//			Sign:   sign,
+	//		})
+	//		c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+	//
+	//		c.Set("userID", newUserID)
+	//	} else {
+	//		// Кука есть -> пытаемся распарсить JSON
+	//		var uc models.UserCookie
+	//		if err := json.Unmarshal([]byte(cookieVal), &uc); err != nil {
+	//			// Кука битая, генерируем заново
+	//			newUserID := app.GenerateShortID([]byte("fd"))
+	//			sign := app.SignUserID(newUserID)
+	//			data, _ := json.Marshal(models.UserCookie{UserID: newUserID, Sign: sign})
+	//
+	//			c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+	//			c.Set("userID", newUserID)
+	//		} else {
+	//			// Кука целая. Если вы пропускаете проверку подписи –
+	//			// просто считаем userID = uc.UserID, и этого достаточно:
+	//			c.Set("userID", uc.UserID)
+	//
+	//			// Если хотите удалить логику подписи, уберите SignUserID().
+	//			// Тогда храните в куке лишь userID, без sign.
+	//		}
+	//	}
+	//	c.Next()
+	//}
 	return func(c *gin.Context) {
+		// 1) Считать Bearer-токен из заголовка Authorization (если есть)
+		authHeader := c.GetHeader("Authorization")
+		var bearerToken string
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			bearerToken = strings.TrimSpace(authHeader[len("Bearer "):])
+		}
+
+		// 2) Считать куку
 		cookieVal, err := c.Cookie(config.CookieName)
+
+		// 3) Логика обработки
 		if err != nil {
-			// Куки нет -> генерируем нового userID
-			newUserID := app.GenerateShortID([]byte(uuid.New().String()))
-			sign := app.SignUserID(newUserID)
-
-			data, _ := json.Marshal(models.UserCookie{
-				UserID: newUserID,
-				Sign:   sign,
-			})
-			c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
-
-			c.Set("userID", newUserID)
-		} else {
-			// Кука есть -> пытаемся распарсить JSON
-			var uc models.UserCookie
-			if err := json.Unmarshal([]byte(cookieVal), &uc); err != nil {
-				// Кука битая, генерируем заново
-				newUserID := app.GenerateShortID([]byte("some-random-seed"))
+			// Куки нет или невозможно прочесть:
+			// Генерируем новый userID и ставим куку (если Bearer не пуст)
+			if bearerToken != "" {
+				newUserID := app.GenerateShortID([]byte(bearerToken + uuid.New().String()))
 				sign := app.SignUserID(newUserID)
-				data, _ := json.Marshal(models.UserCookie{UserID: newUserID, Sign: sign})
 
+				data, _ := json.Marshal(models.UserCookie{
+					Bearer: bearerToken,
+					UserID: newUserID,
+					Sign:   sign,
+				})
 				c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
 				c.Set("userID", newUserID)
 			} else {
-				// Кука целая. Если вы пропускаете проверку подписи –
-				// просто считаем userID = uc.UserID, и этого достаточно:
-				c.Set("userID", uc.UserID)
+				// Если вообще нет Bearer-токена — решайте, что делать:
+				// например, пропускаем пользователя как "гостя" без куки
+				c.Set("userID", "")
+			}
+		} else {
+			// Кука существует -> пробуем распарсить JSON
+			var uc models.UserCookie
+			if err := json.Unmarshal([]byte(cookieVal), &uc); err != nil {
+				// Кука "битая" (не JSON) — создаём новую при наличии bearer
+				if bearerToken != "" {
+					newUserID := app.GenerateShortID([]byte(bearerToken + uuid.New().String()))
+					sign := app.SignUserID(newUserID)
 
-				// Если хотите удалить логику подписи, уберите SignUserID().
-				// Тогда храните в куке лишь userID, без sign.
+					data, _ := json.Marshal(models.UserCookie{
+						Bearer: bearerToken,
+						UserID: newUserID,
+						Sign:   sign,
+					})
+					c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+					c.Set("userID", newUserID)
+				} else {
+					// Нет Bearer-токена — пусть будет "гость"
+					c.Set("userID", "")
+				}
+			} else {
+				// Кука корректно распарсилась
+				// Проверка, что кука соответствует текущему Bearer-токену
+				if bearerToken == "" {
+					// Нет Bearer, но кука есть — возможно, вы хотите сбросить куку
+					// Либо "гостевой" сценарий — решайте логику
+					c.Set("userID", "")
+				} else if uc.Bearer != bearerToken {
+					// Bearer-токен в запросе не совпадает с Bearer в куке —
+					// генерируем новую куку, т. к. пользователь пришёл с другим токеном
+					newUserID := app.GenerateShortID([]byte(bearerToken + uuid.New().String()))
+					sign := app.SignUserID(newUserID)
+
+					data, _ := json.Marshal(models.UserCookie{
+						Bearer: bearerToken,
+						UserID: newUserID,
+						Sign:   sign,
+					})
+					c.SetCookie(config.CookieName, string(data), 3600*24, "/", "", false, true)
+					c.Set("userID", newUserID)
+				} else {
+					// Bearer совпадает
+					// Опционально проверяем подпись, если используете
+					// if !app.VerifySignature(uc.UserID, uc.Sign) {
+					//     // Подпись не прошла — сгенерировать заново
+					//     ...
+					// }
+
+					// Иначе всё ок — работаем с имеющимся userID
+					c.Set("userID", uc.UserID)
+				}
 			}
 		}
 
