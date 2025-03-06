@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 )
 
-func GenerateShortID(url []byte) string {
+func GenerateShortID(url string, user string) string {
 	hash := sha1.New()
-	hash.Write(url)
+	hash.Write([]byte(url + user))
 	return hex.EncodeToString(hash.Sum(nil))[:8]
 }

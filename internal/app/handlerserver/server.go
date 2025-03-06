@@ -1,6 +1,7 @@
 package handlerserver
 
 import (
+	"github.com/Ippolid/shortLink/internal/app/middleware"
 	"github.com/Ippolid/shortLink/internal/app/storage"
 	"github.com/Ippolid/shortLink/internal/logger"
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,8 @@ func (s *Server) newServer() *gin.Engine {
 	engine.Use(logger.RequestLogger())
 	engine.Use(gzipDecompressMiddleware()) // Декомпрессия входящих запросов
 	engine.Use(gzipMiddleware())
+	engine.Use(middleware.AuthMiddleware())
+	engine.Use(middleware.CheckAuthMiddleware())
 
 	engine.POST(
 		"/",
@@ -49,6 +52,9 @@ func (s *Server) newServer() *gin.Engine {
 	engine.POST("/api/shorten/batch",
 		s.PostBatch,
 	)
+
+	engine.GET("/api/user/urls/",
+		s.UserUrls)
 
 	engine.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Route not found")
