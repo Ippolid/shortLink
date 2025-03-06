@@ -322,6 +322,9 @@ func (s *Server) GetID(c *gin.Context) {
 	var err error
 	var exist bool
 	id := c.Param("id")
+	fmt.Println(id)
+	fmt.Println(s.database.Data)
+	fmt.Println(s.database.Users)
 	if s.Db == nil {
 		val, exist = s.database.Data[id]
 		if !exist {
