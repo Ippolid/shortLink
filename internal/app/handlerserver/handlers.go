@@ -36,22 +36,72 @@ import (
 //			return
 //		}
 //	}
+//
+//	func (s *Server) PostCreate(c *gin.Context) {
+//		val, err := io.ReadAll(c.Request.Body)
+//		if err != nil {
+//			c.String(http.StatusBadRequest, "Can't read body")
+//			return
+//		}
+//
+//		id := app.GenerateShortID(val)
+//		if s.Db == nil {
+//			_, exist := s.database.Data[id]
+//			if exist {
+//				c.String(http.StatusConflict, s.Adr+id)
+//				return
+//			}
+//			s.database.SaveLink(val, id)
+//		} else {
+//			err = s.Db.InsertLink(id, string(val))
+//			if err != nil {
+//				fmt.Println(err)
+//				if strings.Contains(err.Error(), "link exists") {
+//					c.String(http.StatusConflict, s.Adr+id)
+//					return
+//				}
+//				c.String(http.StatusBadRequest, fmt.Sprintf("Can't save link: %v", err))
+//				return
+//			}
+//		}
+//
+//		c.Header("content-type", "text/plain")
+//		c.String(http.StatusCreated, s.Adr+id)
+//	}
 func (s *Server) PostCreate(c *gin.Context) {
+	// Получаем user_id из контекста (его устанавливает AuthMiddleware)
+	userID, exists := c.Get("user_id")
+	fmt.Println(userID)
+	fmt.Println(c.Cookie("user_session"))
+	if !exists {
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	userIDStr := userID.(string)
+
+	// Читаем тело запроса
 	val, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Can't read body")
 		return
 	}
 
+	// Генерируем уникальный short_id
 	id := app.GenerateShortID(val)
+
+	// Проверяем наличие базы данных
 	if s.Db == nil {
+		// Проверяем, есть ли уже такой short_id
 		_, exist := s.database.Data[id]
 		if exist {
 			c.String(http.StatusConflict, s.Adr+id)
 			return
 		}
 		s.database.SaveLink(val, id)
+		// Сохраняем ссылку в локальную "базу"
+		s.database.SaveUserLink(userIDStr, string(val))
 	} else {
+		// Сохраняем ссылку в БД (если она есть)
 		err = s.Db.InsertLink(id, string(val))
 		if err != nil {
 			fmt.Println(err)
@@ -64,6 +114,7 @@ func (s *Server) PostCreate(c *gin.Context) {
 		}
 	}
 
+	// Устанавливаем content-type и возвращаем результат
 	c.Header("content-type", "text/plain")
 	c.String(http.StatusCreated, s.Adr+id)
 }
@@ -245,4 +296,31 @@ func (s *Server) PostBatch(c *gin.Context) {
 	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusCreated, resp)
 
+}
+func (s *Server) GetUserURLs(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	userIDStr := userID.(string)
+	userURLs, found := s.database.LoadUserLink(userIDStr)
+
+	if !found || len(userURLs) == 0 {
+		c.Status(http.StatusNoContent)
+		return
+	}
+	var otv models.UsersUrlResp
+	var resp []models.UsersUrlResp
+	var shortlink string
+
+	for _, r := range userURLs {
+		id := app.GenerateShortID([]byte(r))
+		shortlink = s.Adr + id
+		otv.ID = shortlink
+		otv.URL = r
+		resp = append(resp, otv)
+	}
+	c.JSON(http.StatusOK, resp)
 }

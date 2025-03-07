@@ -1,6 +1,7 @@
 package handlerserver
 
 import (
+	"github.com/Ippolid/shortLink/internal/app/middleware"
 	"github.com/Ippolid/shortLink/internal/app/storage"
 	"github.com/Ippolid/shortLink/internal/logger"
 	"github.com/gin-gonic/gin"
@@ -33,6 +34,7 @@ func (s *Server) newServer() *gin.Engine {
 
 	engine.POST(
 		"/",
+		middleware.AuthMiddleware(),
 		s.PostCreate,
 	)
 	engine.GET("/:id",
@@ -48,6 +50,11 @@ func (s *Server) newServer() *gin.Engine {
 
 	engine.POST("/api/shorten/batch",
 		s.PostBatch,
+	)
+
+	engine.GET("api/user/urls",
+		middleware.AuthMiddleware(),
+		s.GetUserURLs,
 	)
 
 	engine.NoRoute(func(c *gin.Context) {
