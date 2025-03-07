@@ -71,8 +71,6 @@ import (
 func (s *Server) PostCreate(c *gin.Context) {
 	// Получаем user_id из контекста (его устанавливает AuthMiddleware)
 	userID, exists := c.Get("user_id")
-	fmt.Println(userID)
-	fmt.Println(c.Cookie("user_session"))
 	if !exists {
 		c.String(http.StatusUnauthorized, "Unauthorized")
 		return
@@ -102,7 +100,7 @@ func (s *Server) PostCreate(c *gin.Context) {
 		s.database.SaveUserLink(userIDStr, string(val))
 	} else {
 		// Сохраняем ссылку в БД (если она есть)
-		err = s.Db.InsertLink(id, string(val))
+		err = s.Db.InsertLink(id, string(val), userIDStr)
 		if err != nil {
 			fmt.Println(err)
 			if strings.Contains(err.Error(), "link exists") {
@@ -232,6 +230,12 @@ func (s *Server) PostAPI(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Invalid JSON data")
 		return
 	}
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	userIDStr := userID.(string)
 
 	id := app.GenerateShortID([]byte(req.URL))
 	if s.Db == nil {
@@ -244,8 +248,9 @@ func (s *Server) PostAPI(c *gin.Context) {
 			return
 		}
 		s.database.SaveLink([]byte(req.URL), id)
+		s.database.SaveUserLink(userIDStr, req.URL)
 	} else {
-		err := s.Db.InsertLink(id, req.URL)
+		err := s.Db.InsertLink(id, req.URL, userIDStr)
 		if err != nil {
 			fmt.Println(err)
 			if strings.Contains(err.Error(), "link exists") {
@@ -267,6 +272,13 @@ func (s *Server) PostAPI(c *gin.Context) {
 }
 
 func (s *Server) PostBatch(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	userIDStr := userID.(string)
+
 	var req []models.PostBatchReq
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
 		c.String(http.StatusBadRequest, "Invalid JSON data")
@@ -282,8 +294,9 @@ func (s *Server) PostBatch(c *gin.Context) {
 
 			if s.Db == nil {
 				s.database.SaveLink([]byte(r.URL), k)
+				s.database.SaveUserLink(userIDStr, r.URL)
 			} else {
-				err := s.Db.InsertLink(k, r.URL)
+				err := s.Db.InsertLink(k, r.URL, userIDStr)
 				if err != nil {
 					c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
 				}
@@ -303,16 +316,33 @@ func (s *Server) GetUserURLs(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
+	var userURLs []string
 
 	userIDStr := userID.(string)
-	userURLs, found := s.database.LoadUserLink(userIDStr)
+	if s.Db == nil {
+		userURLs, found := s.database.LoadUserLink(userIDStr)
 
-	fmt.Println(userURLs)
+		fmt.Println(userURLs)
 
-	if !found || len(userURLs) == 0 {
-		c.Status(http.StatusNoContent)
-		return
+		if !found || len(userURLs) == 0 {
+			c.Status(http.StatusNoContent)
+			return
+		}
+	} else {
+		userURLs, err := s.Db.GetLinksByUserID(userIDStr)
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
+		}
+
+		fmt.Println(userURLs)
+
+		if len(userURLs) == 0 {
+			c.Status(http.StatusNoContent)
+			return
+		}
+
 	}
+
 	var otv models.UsersUrlResp
 	var resp []models.UsersUrlResp
 	var shortlink string
