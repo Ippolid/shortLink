@@ -316,33 +316,31 @@ func (s *Server) GetUserURLs(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	var userURLs []string
+	var userURLs = make([]string, 0)
+	var found bool
+	var err error
 
 	userIDStr := userID.(string)
 	if s.Db == nil {
-		userURLs, found := s.database.LoadUserLink(userIDStr)
-
-		fmt.Println(userURLs)
+		userURLs, found = s.database.LoadUserLink(userIDStr)
 
 		if !found || len(userURLs) == 0 {
 			c.Status(http.StatusNoContent)
 			return
 		}
 	} else {
-		userURLs, err := s.Db.GetLinksByUserID(userIDStr)
+		userURLs, err = s.Db.GetLinksByUserID(userIDStr)
 		if err != nil {
 			c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
 		}
-
 		fmt.Println(userURLs)
-
 		if len(userURLs) == 0 {
 			c.Status(http.StatusNoContent)
 			return
 		}
 
 	}
-
+	fmt.Println(userURLs)
 	var otv models.UsersUrlResp
 	var resp []models.UsersUrlResp
 	var shortlink string
