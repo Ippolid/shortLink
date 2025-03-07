@@ -80,9 +80,7 @@ func (s *Server) PostCreate(c *gin.Context) {
 //			http.Error(res, "Can`t find link", http.StatusBadRequest)
 //			return
 //		}
-//
 //		res.Header().Set("content-type", "text/plain")
-//		// устанавливаем код 200
 //
 //		http.Redirect(res, req, val, http.StatusTemporaryRedirect)
 //	}
