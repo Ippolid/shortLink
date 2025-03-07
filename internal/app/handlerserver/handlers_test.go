@@ -71,6 +71,7 @@ func TestCreateLink(t *testing.T) {
 	server := New(&db, adr, host, nil)
 	r := server.newServer()
 	ts := httptest.NewServer(r)
+
 	defer ts.Close()
 
 	type want struct {
@@ -104,6 +105,10 @@ func TestCreateLink(t *testing.T) {
 	}
 
 	client := resty.New()
+	_, err := client.R().
+		SetBody("https://test-url.com").
+		Post(ts.URL + "/")
+	require.NoError(t, err, "Ошибка при первом запросе `POST /`")
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -182,6 +187,7 @@ func TestGetLink(t *testing.T) {
 	host := "localhost:8080"
 	adr := "http://localhost:8080/"
 	server := New(&db, adr, host, nil)
+
 	server.database.SaveLink([]byte("https://ru.wikipedia.org/wiki/SHA-1"), "b12a6809")
 	server.database.SaveLink([]byte("https://github.com/Ippolid/shortLink/pulls?q=is%3Apr+is%3Aopen"), "14603b1d")
 
@@ -228,6 +234,15 @@ func TestGetLink(t *testing.T) {
 		SetRedirectPolicy(resty.RedirectPolicyFunc(func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}))
+	_, err := client.R().
+		SetBody("https://ru.wikipedia.org/wiki/SHA-1").
+		Post(ts.URL + "/")
+	require.NoError(t, err, "Ошибка при первом запросе `POST /`")
+
+	_, err = client.R().
+		SetBody("https://github.com/Ippolid/shortLink/pulls?q=is%3Apr+is%3Aopen").
+		Post(ts.URL + "/")
+	require.NoError(t, err, "Ошибка при первом запросе `POST /`")
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -281,6 +296,11 @@ func TestCreateLinkApi(t *testing.T) {
 	}
 
 	client := resty.New()
+	_, err := client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(`{"url":"https://test.com"}`).
+		Post(ts.URL + "/api/shorten")
+	require.NoError(t, err, "Ошибка при первом запросе `POST /`")
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

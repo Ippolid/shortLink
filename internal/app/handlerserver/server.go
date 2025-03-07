@@ -41,6 +41,7 @@ func (s *Server) newServer() *gin.Engine {
 		s.GetID,
 	)
 	engine.POST("/api/shorten",
+		middleware.AuthMiddleware(),
 		s.PostAPI,
 	)
 
@@ -49,6 +50,7 @@ func (s *Server) newServer() *gin.Engine {
 	)
 
 	engine.POST("/api/shorten/batch",
+		middleware.AuthMiddleware(),
 		s.PostBatch,
 	)
 
