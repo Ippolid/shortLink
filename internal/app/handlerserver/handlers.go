@@ -307,6 +307,8 @@ func (s *Server) GetUserURLs(c *gin.Context) {
 	userIDStr := userID.(string)
 	userURLs, found := s.database.LoadUserLink(userIDStr)
 
+	fmt.Println(userURLs)
+
 	if !found || len(userURLs) == 0 {
 		c.Status(http.StatusNoContent)
 		return
@@ -322,5 +324,6 @@ func (s *Server) GetUserURLs(c *gin.Context) {
 		otv.URL = r
 		resp = append(resp, otv)
 	}
+	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusOK, resp)
 }
