@@ -6,7 +6,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"log"
 	"sync"
-	"time"
 )
 
 type DataBase struct {
@@ -30,7 +29,7 @@ const (
 	Get              = `SELECT link,deleted FROM shorty WHERE id=$1`
 	GetLinksByUserID = `SELECT link,deleted FROM shorty WHERE user_id=$1`
 	DelLink          = `UPDATE shorty SET deleted = TRUE
-	WHERE short_url = $1 AND user_id = $2`
+	WHERE id = $1 AND user_id = $2`
 )
 
 // NewDBWrapper — конструктор для обёртки
@@ -182,8 +181,7 @@ func (data *DataBase) Dellink(ids []string, userID string) error {
 				_, err := data.db.Exec(DelLink, id, userID)
 				if err != nil {
 					log.Printf("Ошибка при удалении ссылки %s: %v", id, err)
-				}
-				time.Sleep(10 * time.Millisecond) // Небольшая задержка для снижения нагрузки на БД
+				} // Небольшая задержка для снижения нагрузки на БД
 			}
 		}()
 	}
