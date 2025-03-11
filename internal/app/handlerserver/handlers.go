@@ -150,7 +150,7 @@ func (s *Server) GetID(c *gin.Context) {
 			c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
 			return
 		}
-		if !exist {
+		if exist {
 			c.String(http.StatusGone, "Can't find link")
 			return
 		}
