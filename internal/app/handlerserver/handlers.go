@@ -145,9 +145,13 @@ func (s *Server) GetID(c *gin.Context) {
 			return
 		}
 	} else {
-		val, err = s.Db.GetLink(id)
+		val, exist, err = s.Db.GetLink(id)
 		if err != nil {
 			c.String(http.StatusBadRequest, fmt.Sprintf("Ошибка при вставке данных в дб: %v", err))
+			return
+		}
+		if exist {
+			c.String(http.StatusGone, "Can't find link")
 			return
 		}
 	}
@@ -354,4 +358,19 @@ func (s *Server) GetUserURLs(c *gin.Context) {
 	}
 	c.Header("Content-Type", "application/json")
 	c.JSON(http.StatusOK, resp)
+}
+
+func (s *Server) DeleteLinks(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	var req []string
+	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
+		c.String(http.StatusBadRequest, "Invalid JSON data")
+		return
+	}
+	s.Db.Dellink(req, userID.(string))
+	c.Status(http.StatusAccepted)
 }
