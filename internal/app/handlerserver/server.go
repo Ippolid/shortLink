@@ -59,6 +59,10 @@ func (s *Server) newServer() *gin.Engine {
 		s.GetUserURLs,
 	)
 
+	engine.DELETE("/api/user/urls",
+		middleware.AuthMiddleware(),
+		s.DeleteLinks)
+
 	engine.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Route not found")
 	})
