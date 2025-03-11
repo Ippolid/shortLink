@@ -28,7 +28,7 @@ const (
 	    ON CONFLICT DO NOTHING;
 	    `
 	Get              = `SELECT link,deleted FROM shorty WHERE id=$1`
-	GetLinksByUserID = `SELECT link FROM shorty WHERE user_id=$1`
+	GetLinksByUserID = `SELECT link,deleted FROM shorty WHERE user_id=$1`
 	DelLink          = `UPDATE shorty SET deleted = TRUE
 	WHERE short_url = $1 AND user_id = $2`
 )
