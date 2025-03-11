@@ -18,7 +18,7 @@ const (
 	    CREATE TABLE IF NOT EXISTS shorty (
 	        id      TEXT PRIMARY KEY,
 	        link    TEXT NOT NULL UNIQUE,
-	        user_id TEXT default ''
+	        user_id TEXT default '',
 	        deleted BOOLEAN default false
 	    );
 	    `
