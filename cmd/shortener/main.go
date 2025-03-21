@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Ippolid/shortLink/internal/app/storage"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,6 +14,7 @@ import (
 	"github.com/Ippolid/shortLink/config"
 	"github.com/Ippolid/shortLink/internal/app/handlerserver"
 	"github.com/Ippolid/shortLink/internal/logger"
+	_ "net/http/pprof"
 )
 
 func main() {
@@ -61,6 +63,13 @@ func main() {
 		log.Println("Запуск сервера на", host)
 		if err := server.Start(); err != nil {
 			log.Fatalf("Ошибка запуска сервера: %v", err)
+		}
+	}()
+
+	go func() {
+		log.Println("Запуск pprof на http://localhost:6060/debug/pprof/")
+		if err := http.ListenAndServe("localhost:6060", nil); err != nil {
+			log.Fatalf("Ошибка запуска pprof сервера: %v", err)
 		}
 	}()
 
