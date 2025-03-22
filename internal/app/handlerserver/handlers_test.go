@@ -124,64 +124,6 @@ func TestCreateLink(t *testing.T) {
 	}
 }
 
-//	func TestGetLink(t *testing.T) {
-//		db := NewDbase()
-//		server := New(&db)
-//		server.database.SaveLink([]byte("https://ru.wikipedia.org/wiki/SHA-1"), "b12a6809")
-//		server.database.SaveLink([]byte("https://github.com/Ippolid/shortLink/pulls?q=is%3Apr+is%3Aopen"), "14603b1d")
-//		type want struct {
-//			code     int
-//			location string
-//		}
-//		tests := []struct {
-//			name    string
-//			request string
-//			want    want
-//		}{
-//			{
-//				name:    "positive test #1",
-//				request: "http://localhost:8080/b12a6809",
-//				want: want{
-//					code:     307,
-//					location: "https://ru.wikipedia.org/wiki/SHA-1",
-//				},
-//			},
-//			{
-//				name:    "positive test #2",
-//				request: "http://localhost:8080/14603b1d",
-//				want: want{
-//					code:     307,
-//					location: "https://github.com/Ippolid/shortLink/pulls?q=is%3Apr+is%3Aopen",
-//				},
-//			},
-//			{
-//				name:    "negative test #3",
-//				request: "http://localhost:8080/14603b1d123",
-//				want: want{
-//					code:     400,
-//					location: "",
-//				},
-//			},
-//		}
-//		for _, test := range tests {
-//			t.Run(test.name, func(t *testing.T) {
-//				// создаём новый экземпляр сервера
-//				handler := ValidationMiddleware(http.HandlerFunc(server.GetID))
-//				request := httptest.NewRequest(http.MethodGet, test.request, nil)
-//				// создаём новый Recorder
-//				w := httptest.NewRecorder()
-//				handler.ServeHTTP(w, request)
-//
-//				res := w.Result()
-//				defer res.Body.Close()
-//				// проверяем код ответа
-//				assert.Equal(t, res.StatusCode, test.want.code)
-//				// проверяем заголовок Location
-//				location := res.Header.Get("Location")
-//				assert.Equal(t, location, test.want.location)
-//			})
-//		}
-//	}
 func TestGetLink(t *testing.T) {
 	db := storage.NewDbase()
 	host := "localhost:8080"
