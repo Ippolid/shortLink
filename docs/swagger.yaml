@@ -1,0 +1,74 @@
+basePath: /
+definitions:
+  models.UsersUrlResp:
+    properties:
+      original_url:
+        type: string
+      short_url:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API для сервиса сокращения ссылок
+  title: Shortener API
+  version: "1.0"
+paths:
+  /:
+    post:
+      consumes:
+      - text/plain
+      description: Принимает оригинальную ссылку и возвращает короткую
+      parameters:
+      - description: Оригинальный URL
+        in: body
+        name: url
+        required: true
+        schema:
+          type: string
+      produces:
+      - text/plain
+      responses:
+        "201":
+          description: Короткая ссылка
+          schema:
+            type: string
+        "400":
+          description: Ошибка ввода
+          schema:
+            type: string
+        "401":
+          description: Неавторизованный запрос
+          schema:
+            type: string
+        "409":
+          description: Ссылка уже существует
+          schema:
+            type: string
+      summary: Создание короткой ссылки
+      tags:
+      - ссылки
+  /api/user/urls:
+    get:
+      description: Возвращает список всех ссылок, созданных пользователем
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список ссылок пользователя
+          schema:
+            items:
+              $ref: '#/definitions/models.UsersUrlResp'
+            type: array
+        "204":
+          description: Ссылки не найдены
+          schema:
+            type: string
+        "401":
+          description: Неавторизованный запрос
+          schema:
+            type: string
+      summary: Получение всех ссылок пользователя
+      tags:
+      - пользователь
+swagger: "2.0"
