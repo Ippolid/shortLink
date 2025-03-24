@@ -1,10 +1,13 @@
 package handlerserver
 
 import (
+	_ "github.com/Ippolid/shortLink/docs" // путь к
 	"github.com/Ippolid/shortLink/internal/app/middleware"
 	"github.com/Ippolid/shortLink/internal/app/storage"
 	"github.com/Ippolid/shortLink/internal/logger"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"net/http"
 )
 
@@ -66,6 +69,8 @@ func (s *Server) newServer() *gin.Engine {
 	engine.NoRoute(func(c *gin.Context) {
 		c.String(http.StatusBadRequest, "Route not found")
 	})
+
+	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return engine
 }

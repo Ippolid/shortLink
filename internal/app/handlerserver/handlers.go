@@ -11,63 +11,21 @@ import (
 	"strings"
 )
 
-//	func (s *Server) PostCreate(res http.ResponseWriter, req *http.Request) {
-//		if req.Method != http.MethodPost {
-//			http.Error(res, "Not POST method", http.StatusMethodNotAllowed)
-//			return
-//		}
-//
-//		val, err := io.ReadAll(req.Body)
-//		if err != nil {
-//			http.Error(res, "Can`t read body", http.StatusUnprocessableEntity)
-//			return
-//		}
-//
-//		id := GenerateShortID(val)
-//		s.database.SaveLink(val, id)
-//
-//		res.Header().Set("content-type", "text/plain")
-//		// устанавливаем код 200
-//		res.WriteHeader(http.StatusCreated)
-//		// пишем тело ответа
-//		_, err = res.Write([]byte(host + id))
-//		if err != nil {
-//			http.Error(res, "Can`t write body", http.StatusUnprocessableEntity)
-//			return
-//		}
-//	}
-//
-//	func (s *Server) PostCreate(c *gin.Context) {
-//		val, err := io.ReadAll(c.Request.Body)
-//		if err != nil {
-//			c.String(http.StatusBadRequest, "Can't read body")
-//			return
-//		}
-//
-//		id := app.GenerateShortID(val)
-//		if s.Db == nil {
-//			_, exist := s.database.Data[id]
-//			if exist {
-//				c.String(http.StatusConflict, s.Adr+id)
-//				return
-//			}
-//			s.database.SaveLink(val, id)
-//		} else {
-//			err = s.Db.InsertLink(id, string(val))
-//			if err != nil {
-//				fmt.Println(err)
-//				if strings.Contains(err.Error(), "link exists") {
-//					c.String(http.StatusConflict, s.Adr+id)
-//					return
-//				}
-//				c.String(http.StatusBadRequest, fmt.Sprintf("Can't save link: %v", err))
-//				return
-//			}
-//		}
-//
-//		c.Header("content-type", "text/plain")
-//		c.String(http.StatusCreated, s.Adr+id)
-//	}
+// PostCreate обрабатывает POST-запрос для создания короткой ссылки.
+// Принимает тело запроса с оригинальной ссылкой, возвращает короткую ссылку.
+// Требует авторизации, получая userID из контекста.
+// Возвращает статус 201 Created при успешном создании, 409 Conflict при дублировании.
+// @Summary Создание короткой ссылки
+// @Description Принимает оригинальную ссылку и возвращает короткую
+// @Tags ссылки
+// @Accept plain
+// @Produce plain
+// @Param url body string true "Оригинальный URL"
+// @Success 201 {string} string "Короткая ссылка"
+// @Failure 400 {string} string "Ошибка ввода"
+// @Failure 401 {string} string "Неавторизованный запрос"
+// @Failure 409 {string} string "Ссылка уже существует"
+// @Router / [post]
 func (s *Server) PostCreate(c *gin.Context) {
 	// Получаем user_id из контекста (его устанавливает AuthMiddleware)
 	userID, exists := c.Get("user_id")
@@ -117,22 +75,10 @@ func (s *Server) PostCreate(c *gin.Context) {
 	c.String(http.StatusCreated, s.Adr+id)
 }
 
-//	func (s *Server) GetID(res http.ResponseWriter, req *http.Request) {
-//		if req.Method != http.MethodGet {
-//			http.Error(res, "Not GET method", http.StatusBadRequest)
-//			return
-//		}
-//
-//		id := strings.TrimPrefix(req.URL.Path, "/")
-//		val, err := s.database.Data[id]
-//		if !err {
-//			http.Error(res, "Can`t find link", http.StatusBadRequest)
-//			return
-//		}
-//		res.Header().Set("content-type", "text/plain")
-//
-//		http.Redirect(res, req, val, http.StatusTemporaryRedirect)
-//	}
+// GetID обрабатывает GET-запрос для получения оригинальной ссылки по идентификатору.
+// Получает ID из URL-параметра и перенаправляет на оригинальную ссылку.
+// Возвращает 307 TemporaryRedirect при успехе, 400 BadRequest при ошибке, 410 Gone если ссылка удалена.
+
 func (s *Server) GetID(c *gin.Context) {
 	var val string
 	var err error
@@ -166,6 +112,8 @@ func (s *Server) GetID(c *gin.Context) {
 	c.Redirect(http.StatusTemporaryRedirect, val)
 }
 
+// PingDB проверяет доступность базы данных.
+// Возвращает 200 OK если база доступна, 500 InternalServerError в противном случае.
 func (s *Server) PingDB(c *gin.Context) {
 	b, err := s.Db.Ping()
 	if err != nil {
@@ -179,55 +127,10 @@ func (s *Server) PingDB(c *gin.Context) {
 	c.Status(http.StatusInternalServerError)
 }
 
-//	func ValidationMiddleware(next http.Handler) http.Handler {
-//		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//			// Проверяем метод запроса
-//			if r.Method != http.MethodPost && r.Method != http.MethodGet {
-//				http.Error(w, "Method Not Allowed", http.StatusBadRequest)
-//				return
-//			}
-//
-//			// Если метод POST, проверяем, что путь "/"
-//			if r.Method == http.MethodPost && r.URL.Path != "/" {
-//				http.Error(w, "Invalid POST path", http.StatusBadRequest)
-//				return
-//			}
-//
-//			// Если метод GET, проверяем, что путь содержит ID
-//			if r.Method == http.MethodGet && (r.URL.Path == "/" || strings.Contains(r.URL.Path, "/ ")) {
-//				http.Error(w, "Invalid GET path", http.StatusBadRequest)
-//				return
-//			}
-//
-//			next.ServeHTTP(w, r)
-//		})
-//	}
-func ValidationMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// Проверяем метод запроса
-		if c.Request.Method != http.MethodPost && c.Request.Method != http.MethodGet {
-			c.String(http.StatusBadRequest, "Method Not Allowed")
-			c.Abort()
-			return
-		}
-
-		// Если метод POST, проверяем, что путь "/"
-		if c.Request.Method == http.MethodPost && c.Request.URL.Path != "/" {
-			c.String(http.StatusBadRequest, "Invalid POST path")
-			c.Abort()
-			return
-		}
-
-		// Если метод GET, проверяем, что путь содержит ID
-		if c.Request.Method == http.MethodGet && (c.Request.URL.Path == "/" || strings.Contains(c.Request.URL.Path, "/ ")) {
-			c.String(http.StatusBadRequest, "Invalid GET path")
-			c.Abort()
-			return
-		}
-
-		c.Next()
-	}
-}
+// PostAPI обрабатывает POST-запрос к API для создания короткой ссылки.
+// Принимает JSON-запрос с полем URL, возвращает JSON-ответ с короткой ссылкой.
+// Требует авторизации, получая userID из контекста.
+// Возвращает статус 201 Created при успешном создании, 409 Conflict при дублировании.
 func (s *Server) PostAPI(c *gin.Context) {
 	var req models.PostRerquest
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
@@ -275,6 +178,10 @@ func (s *Server) PostAPI(c *gin.Context) {
 	c.JSON(http.StatusCreated, response)
 }
 
+// PostBatch обрабатывает пакетный POST-запрос для создания нескольких коротких ссылок.
+// Принимает JSON-массив с парами {ID, URL}, возвращает JSON-массив с короткими ссылками.
+// Требует авторизации, получая userID из контекста.
+// Возвращает статус 201 Created при успешном создании.
 func (s *Server) PostBatch(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -314,6 +221,20 @@ func (s *Server) PostBatch(c *gin.Context) {
 	c.JSON(http.StatusCreated, resp)
 
 }
+
+// GetUserURLs возвращает список всех ссылок пользователя.
+// Требует авторизации, получая userID из контекста.
+// Возвращает JSON-массив с короткими и оригинальными ссылками.
+// Возвращает статус 200 OK при успешном получении, 204 NoContent если ссылок нет.
+//
+// @Summary Получение всех ссылок пользователя
+// @Description Возвращает список всех ссылок, созданных пользователем
+// @Tags пользователь
+// @Produce json
+// @Success 200 {array} models.UsersUrlResp "Список ссылок пользователя"
+// @Success 204 {string} string "Ссылки не найдены"
+// @Failure 401 {string} string "Неавторизованный запрос"
+// @Router /api/user/urls [get]
 func (s *Server) GetUserURLs(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -360,6 +281,11 @@ func (s *Server) GetUserURLs(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// DeleteLinks помечает указанные ссылки как удаленные.
+// Принимает JSON-массив с идентификаторами ссылок.
+// Удаляет только ссылки, принадлежащие текущему пользователю.
+// Требует авторизации, получая userID из контекста.
+// Возвращает статус 202 Accepted при успешном выполнении.
 func (s *Server) DeleteLinks(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
