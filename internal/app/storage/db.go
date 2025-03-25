@@ -13,6 +13,7 @@ type DataBase struct {
 	db *sql.DB
 }
 
+// Const - создание констант
 const (
 	//CrearTable — запрос на создание таблицы
 	CrearTable = `
