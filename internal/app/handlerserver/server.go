@@ -11,6 +11,7 @@ import (
 	"net/http"
 )
 
+// Server - структура сервера
 type Server struct {
 	database *storage.Dbase
 	Host     string
@@ -76,6 +77,7 @@ func (s *Server) newServer() *gin.Engine {
 	return engine
 }
 
+// Start - запуск сервера
 func (s *Server) Start() error {
 	engine := s.newServer()
 	return engine.Run(s.Host)

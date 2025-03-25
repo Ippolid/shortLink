@@ -46,6 +46,7 @@ type gzipResponseWriter struct {
 	Writer io.Writer
 }
 
+// Write - Реализация метода Write для gzipResponseWriter
 func (g *gzipResponseWriter) Write(b []byte) (int, error) {
 	return g.Writer.Write(b)
 }
