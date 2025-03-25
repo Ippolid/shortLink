@@ -78,7 +78,6 @@ func (s *Server) PostCreate(c *gin.Context) {
 // GetID обрабатывает GET-запрос для получения оригинальной ссылки по идентификатору.
 // Получает ID из URL-параметра и перенаправляет на оригинальную ссылку.
 // Возвращает 307 TemporaryRedirect при успехе, 400 BadRequest при ошибке, 410 Gone если ссылка удалена.
-
 func (s *Server) GetID(c *gin.Context) {
 	var val string
 	var err error

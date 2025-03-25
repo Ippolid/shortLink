@@ -18,6 +18,7 @@ type Server struct {
 	Db       *storage.DataBase
 }
 
+// Создание нового сервера
 func New(st *storage.Dbase, adr, host string, db *storage.DataBase) *Server {
 	s := &Server{
 		database: st,
