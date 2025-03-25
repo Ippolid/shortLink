@@ -1,13 +1,17 @@
 package handlerserver
 
 import (
+	_ "github.com/Ippolid/shortLink/docs" // путь к
 	"github.com/Ippolid/shortLink/internal/app/middleware"
 	"github.com/Ippolid/shortLink/internal/app/storage"
 	"github.com/Ippolid/shortLink/internal/logger"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"net/http"
 )
 
+// Server - структура сервера
 type Server struct {
 	database *storage.Dbase
 	Host     string
@@ -15,6 +19,7 @@ type Server struct {
 	Db       *storage.DataBase
 }
 
+// Создание нового сервера
 func New(st *storage.Dbase, adr, host string, db *storage.DataBase) *Server {
 	s := &Server{
 		database: st,
@@ -67,9 +72,12 @@ func (s *Server) newServer() *gin.Engine {
 		c.String(http.StatusBadRequest, "Route not found")
 	})
 
+	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	return engine
 }
 
+// Start - запуск сервера
 func (s *Server) Start() error {
 	engine := s.newServer()
 	return engine.Run(s.Host)

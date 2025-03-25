@@ -8,27 +8,34 @@ import (
 	"sync"
 )
 
+// DataBase — обёртка для работы с БД
 type DataBase struct {
 	db *sql.DB
 }
 
+// Const - создание констант
 const (
+	//CrearTable — запрос на создание таблицы
 	CrearTable = `
 	    CREATE TABLE IF NOT EXISTS shorty (
 	        id      TEXT PRIMARY KEY,
 	        link    TEXT NOT NULL UNIQUE,
 	        user_id TEXT default '',
 	        deleted BOOLEAN default false
-	    );
-	    `
+	    );`
+
+	//Insert — запрос на вставку данных
 	Insert = `
 	    INSERT INTO shorty (id, link, user_id)
 	    VALUES ($1, $2, $3)
 	    ON CONFLICT DO NOTHING;
 	    `
-	Get              = `SELECT link,deleted FROM shorty WHERE id=$1`
+	//Get — запрос на получение данных
+	Get = `SELECT link,deleted FROM shorty WHERE id=$1`
+	//GetLinksByUserID — запрос на получение данных по пользователю
 	GetLinksByUserID = `SELECT link,deleted FROM shorty WHERE user_id=$1`
-	DelLink          = `UPDATE shorty SET deleted = TRUE
+	//DelLink — запрос на удаление данных
+	DelLink = `UPDATE shorty SET deleted = TRUE
 	WHERE id = $1 AND user_id = $2`
 )
 
@@ -41,6 +48,7 @@ func NewDataBase(db *sql.DB) (*DataBase, error) {
 	return &DataBase{db: db}, nil
 }
 
+// Connect — подключение к БД
 func Connect(op string) (*sql.DB, error) {
 	ps := op
 
@@ -56,6 +64,7 @@ func Connect(op string) (*sql.DB, error) {
 	return db, nil
 }
 
+// Ping — проверка доступности БД
 func (data *DataBase) Ping() (bool, error) {
 	err := data.db.Ping()
 	if err != nil {
@@ -64,33 +73,8 @@ func (data *DataBase) Ping() (bool, error) {
 	return true, nil
 }
 
+// InsertLink — вставка данных
 func (data *DataBase) InsertLink(id, link, user string) error {
-	//tx, err := data.db.Begin()
-	//if err != nil {
-	//	return fmt.Errorf("ошибка начала транзакции: %v", err)
-	//}
-	//defer func() {
-	//	if err != nil {
-	//		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-	//			log.Printf("Ошибка отката транзакции: %v", rollbackErr)
-	//		}
-	//	}
-	//}()
-	//res, err1 := tx.Exec(Insert, id, link)
-	//
-	//fmt.Println(res, err1)
-	//
-	//if err != nil {
-	//	return fmt.Errorf("ошибка вставки данных: %v", err)
-	//}
-	//
-	//// Фиксируем транзакцию
-	//if err = tx.Commit(); err != nil {
-	//	return fmt.Errorf("ошибка подтверждения транзакции: %v", err)
-	//}
-	//
-	//log.Println("Данные успешно вставлены")
-	//return nil
 	tx, err := data.db.Begin()
 	if err != nil {
 		return fmt.Errorf("ошибка начала транзакции: %v", err)
@@ -129,6 +113,7 @@ func (data *DataBase) InsertLink(id, link, user string) error {
 	return nil
 }
 
+// GetLink — получение данных
 func (data *DataBase) GetLink(id string) (string, bool, error) {
 	var link string
 	var deleted bool
@@ -142,6 +127,7 @@ func (data *DataBase) GetLink(id string) (string, bool, error) {
 	return link, deleted, nil
 }
 
+// GetLinksByUserID — получение данных по пользователю
 func (data *DataBase) GetLinksByUserID(userID string) ([]string, error) {
 	rows, err := data.db.Query(GetLinksByUserID, userID)
 	if err != nil {
@@ -168,6 +154,7 @@ func (data *DataBase) GetLinksByUserID(userID string) ([]string, error) {
 	return links, nil
 }
 
+// Dellink — удаление данных
 func (data *DataBase) Dellink(ids []string, userID string) error {
 	buf := make(chan string, 100)
 	var wg sync.WaitGroup

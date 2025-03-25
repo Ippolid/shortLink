@@ -17,6 +17,13 @@ import (
 	_ "net/http/pprof"
 )
 
+// Создаём базу данных
+// @title Shortener API
+// @version 1.0
+// @description API для сервиса сокращения ссылок
+// @host localhost:8080
+// @BasePath /
+// Загружаем данные из файла, если файл указан
 func main() {
 	var server *handlerserver.Server
 	var db = storage.NewDbase()
@@ -28,9 +35,6 @@ func main() {
 		panic(err)
 	}
 	if dboopen == "" {
-		// Создаём базу данных
-
-		// Загружаем данные из файла, если файл указан
 		if err := db.ReadLocal(storagePath); err != nil {
 			log.Fatalf("Ошибка загрузки данных: %v", err)
 		}
